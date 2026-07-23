@@ -1,0 +1,502 @@
+.ge-force-visual-root,
+.ge-visual-root {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.ge-force-showcase-ready {
+    background: #000 !important;
+}
+
+.ge-direct-render,
+.register-page,
+.dashboard-page,
+.market-page,
+.battle-page {
+    background: #000 !important;
+}
+
+.ge-force-showcase-ready::before,
+.ge-force-showcase-ready::after {
+    opacity: 0 !important;
+}
+
+.ge-direct-render::before,
+.ge-direct-render::after,
+.register-page::before,
+.register-page::after,
+.dashboard-page::before,
+.dashboard-page::after,
+.market-page::before,
+.market-page::after,
+.battle-page::before,
+.battle-page::after {
+    display: none !important;
+    opacity: 0 !important;
+}
+
+.ge-force-showcase-ready.dashboard-page .data-stream,
+.ge-force-showcase-ready.market-page .data-stream,
+.ge-force-showcase-ready.battle-page .data-stream {
+    display: none !important;
+}
+
+.register-page .particle-canvas,
+.register-page .data-stream,
+.dashboard-page .data-stream,
+.market-page .data-stream,
+.battle-page .data-stream {
+    display: none !important;
+}
+
+.ge-force-visual-root {
+    z-index: 2;
+    mix-blend-mode: screen;
+}
+
+.ge-force-visual-root canvas,
+.ge-visual-root canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.ge-force-visual-root canvas {
+    opacity: 0.94;
+    filter: saturate(1.85) contrast(1.22) brightness(1.18);
+}
+
+.ge-mouse-spark {
+    position: fixed;
+    width: 3px;
+    height: 3px;
+    z-index: 998;
+    pointer-events: none;
+    border-radius: 50%;
+    background: rgba(155, 248, 255, 0.92);
+    box-shadow: 0 0 12px rgba(105, 232, 255, 0.72);
+    transform: translate(-50%, -50%);
+    animation: geSparkFade 640ms ease-out forwards;
+}
+
+@keyframes geSparkFade {
+    to {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--spark-dx, 0px)), calc(-50% + var(--spark-dy, 0px))) scale(0.24);
+    }
+}
+
+.ge-force-showcase-ready .app-shell,
+.ge-force-showcase-ready .auth-shell,
+.ge-force-showcase-ready main[id="app"] {
+    position: relative;
+    z-index: 3;
+}
+
+.ge-force-showcase-ready .topbar,
+.ge-force-showcase-ready .hero-panel,
+.ge-force-showcase-ready .command-panel,
+.ge-force-showcase-ready .chart-panel,
+.ge-force-showcase-ready .panel,
+.ge-force-showcase-ready .arena-card,
+.ge-force-showcase-ready .combat-control,
+.ge-force-showcase-ready .market-stat,
+.ge-force-showcase-ready .stat-card,
+.ge-force-showcase-ready .board,
+.ge-force-showcase-ready .terminal-board,
+.ge-force-showcase-ready .trend-board,
+.ge-force-showcase-ready .rank-board,
+.ge-force-showcase-ready .live-card,
+.ge-force-showcase-ready .reward,
+.ge-force-showcase-ready .loot-card,
+.ge-force-showcase-ready .modal-box {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.012)),
+        rgba(5, 10, 22, 0.14) !important;
+    border-color: rgba(130, 229, 255, 0.18) !important;
+    box-shadow:
+        0 22px 68px rgba(0, 0, 0, 0.26),
+        inset 0 1px 0 rgba(255, 255, 255, 0.09),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.05) !important;
+    backdrop-filter: blur(8px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(118%) !important;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.ge-force-showcase-ready .topbar::after,
+.ge-force-showcase-ready .hero-panel::after,
+.ge-force-showcase-ready .command-panel::after,
+.ge-force-showcase-ready .panel::after,
+.ge-force-showcase-ready .stat-card::before,
+.ge-force-showcase-ready .arena-card::before,
+.ge-force-showcase-ready .market-stat::before {
+    opacity: 0.12 !important;
+}
+
+.ge-force-showcase-ready .hero-panel::before,
+.ge-force-showcase-ready .command-panel::before,
+.ge-force-showcase-ready .panel::before,
+.ge-force-showcase-ready .chart-panel::before,
+.ge-force-showcase-ready .arena-card::before,
+.ge-force-showcase-ready .stat-card::before,
+.ge-force-showcase-ready .market-stat::before {
+    opacity: 0.14 !important;
+}
+
+.ge-force-showcase-ready .topbar::before,
+.ge-force-showcase-ready .command-panel::before,
+.ge-force-showcase-ready .chart-panel::before,
+.ge-force-showcase-ready .panel::before,
+.ge-force-showcase-ready .stat-card::before,
+.ge-force-showcase-ready .brand-panel::before,
+.ge-force-showcase-ready .auth-panel::before {
+    background:
+        radial-gradient(
+            circle at calc(50% + var(--tilt-x, 0%)) calc(50% + var(--tilt-y, 0%)),
+            rgba(105, 232, 255, 0.18),
+            transparent 18rem
+        ),
+        linear-gradient(130deg, rgba(255, 255, 255, 0.08), transparent 42%) !important;
+}
+
+.ge-force-showcase-ready .ge-force-visual-root {
+    filter:
+        drop-shadow(var(--ge-parallax-shadow-x, 0px) var(--ge-parallax-shadow-y, 0px) 24px rgba(105, 232, 255, 0.2));
+}
+
+.ge-page-transition {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    background:
+        radial-gradient(circle at var(--transition-x, 50%) var(--transition-y, 50%), rgba(255, 255, 255, 0.92) 0 0.28rem, rgba(105, 232, 255, 0.9) 0.32rem, transparent 0.74rem),
+        radial-gradient(circle at var(--transition-x, 50%) var(--transition-y, 50%), rgba(105, 232, 255, 0.32), transparent 14rem),
+        radial-gradient(circle at var(--transition-x, 50%) var(--transition-y, 50%), transparent 0 8rem, rgba(105, 232, 255, 0.36) 8.2rem, transparent 8.55rem),
+        radial-gradient(circle at var(--transition-x, 50%) var(--transition-y, 50%), transparent 0 15rem, rgba(255, 92, 168, 0.3) 15.25rem, transparent 15.65rem),
+        rgba(0, 0, 0, 0.18);
+    transform: scale(0.72);
+    transform-origin: 50% 50%;
+    filter: saturate(1.4) brightness(1.1);
+    will-change: opacity, transform, filter, clip-path;
+    clip-path: circle(0% at 50% 50%);
+}
+
+.ge-page-transition::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(105, 232, 255, 0.36) 46%, rgba(255,255,255,0.82) 50%, rgba(255, 92, 168, 0.34) 54%, transparent 100%),
+        repeating-linear-gradient(0deg, transparent 0 10px, rgba(255,255,255,0.08) 10px 11px);
+    opacity: 0;
+    transform: scaleX(0.16);
+    transform-origin: center;
+}
+
+.ge-page-transition::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at var(--transition-x, 50%) var(--transition-y, 50%), transparent 0 3.5rem, rgba(255,255,255,0.64) 3.7rem, transparent 4.05rem),
+        radial-gradient(circle at var(--transition-x, 50%) var(--transition-y, 50%), transparent 0 22rem, rgba(105,232,255,0.18) 22.25rem, transparent 22.8rem);
+    opacity: 0;
+    transform: scale(0.45) rotate(0deg);
+    transform-origin: center;
+}
+
+.ge-transitioning .app-shell,
+.ge-transitioning .auth-shell,
+.ge-transitioning main[id="app"] {
+    pointer-events: none;
+}
+
+.ge-transitioning .ge-page-transition {
+    opacity: 1;
+    transform: scale(1);
+    clip-path: circle(140% at 50% 50%);
+    transition:
+        opacity 520ms ease,
+        transform 520ms cubic-bezier(0.16, 1, 0.3, 1),
+        clip-path 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ge-transitioning .ge-page-transition::before {
+    opacity: 0.92;
+    transform: scaleX(1);
+    transition: opacity 260ms ease 80ms, transform 420ms cubic-bezier(0.16, 1, 0.3, 1) 60ms;
+}
+
+.ge-transitioning .ge-page-transition::after {
+    opacity: 0.72;
+    transform: scale(1.24) rotate(24deg);
+    transition: opacity 420ms ease 80ms, transform 520ms cubic-bezier(0.16, 1, 0.3, 1) 40ms;
+}
+
+.ge-transitioning main[id="app"] {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.972);
+    filter: blur(4px);
+    transition: opacity 320ms ease, transform 320ms ease, filter 320ms ease;
+}
+
+.ge-force-showcase-ready .stat-card b,
+.ge-force-showcase-ready .live-card b,
+.ge-force-showcase-ready .mini-feed b {
+    transition: color 180ms ease, text-shadow 180ms ease, transform 180ms ease;
+}
+
+.ge-force-showcase-ready input,
+.ge-force-showcase-ready select,
+.ge-force-showcase-ready .sell-input,
+.ge-force-showcase-ready .field input,
+.ge-force-showcase-ready .field select {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.062), rgba(255, 255, 255, 0.014)),
+        rgba(5, 10, 22, 0.32) !important;
+}
+
+.ge-force-showcase-ready.dashboard-page .command-panel,
+.ge-force-showcase-ready.dashboard-page .chart-panel,
+.ge-force-showcase-ready.dashboard-page .panel,
+.ge-force-showcase-ready.dashboard-page .stat-card {
+    backdrop-filter: blur(5px) saturate(112%) !important;
+    -webkit-backdrop-filter: blur(5px) saturate(112%) !important;
+}
+
+.ge-force-showcase-ready.register-page .particle-canvas {
+    display: none !important;
+}
+
+.ge-force-showcase-ready.market-page .app-shell,
+.ge-force-showcase-ready.battle-page .app-shell {
+    width: min(1480px, calc(100% - 56px));
+}
+
+.ge-force-showcase-ready.market-page .hero-panel,
+.ge-force-showcase-ready.battle-page .hero-panel {
+    min-height: 260px;
+}
+
+.ge-force-showcase-ready.market-page .hero-panel {
+    grid-template-columns: minmax(0, 0.72fr) minmax(280px, 0.28fr) !important;
+    max-width: 980px;
+}
+
+.ge-force-showcase-ready.market-page .toolbar,
+.ge-force-showcase-ready.market-page .panel {
+    max-width: 980px;
+}
+
+.ge-force-showcase-ready.battle-page .hero-panel,
+.ge-force-showcase-ready.battle-page .combat-control,
+.ge-force-showcase-ready.battle-page .content-grid {
+    max-width: 1180px;
+}
+
+.ge-force-showcase-ready.battle-page .arena-grid {
+    grid-template-columns: minmax(280px, 0.82fr) minmax(180px, 0.42fr) minmax(280px, 0.82fr) !important;
+    max-width: 1280px;
+}
+
+.ge-force-showcase-ready.market-page .hero-panel,
+.ge-force-showcase-ready.market-page .toolbar,
+.ge-force-showcase-ready.market-page .panel,
+.ge-force-showcase-ready.battle-page .hero-panel,
+.ge-force-showcase-ready.battle-page .arena-grid,
+.ge-force-showcase-ready.battle-page .combat-control,
+.ge-force-showcase-ready.battle-page .content-grid {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ge-force-showcase-ready.market-page .panel,
+.ge-force-showcase-ready.battle-page .panel,
+.ge-force-showcase-ready.battle-page .arena-card,
+.ge-force-showcase-ready.battle-page .combat-control {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.044), rgba(255, 255, 255, 0.01)),
+        rgba(5, 10, 22, 0.1) !important;
+    backdrop-filter: blur(5px) saturate(112%) !important;
+    -webkit-backdrop-filter: blur(5px) saturate(112%) !important;
+}
+
+.ge-force-showcase-ready.market-page .ge-force-visual-root canvas,
+.ge-force-showcase-ready.battle-page .ge-force-visual-root canvas,
+.ge-force-showcase-ready.dashboard-page .ge-force-visual-root canvas {
+    opacity: 0.98;
+    filter: saturate(2) contrast(1.3) brightness(1.22);
+}
+
+@media (max-width: 720px) {
+    .ge-force-visual-root canvas {
+        opacity: 0.62;
+    }
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) {
+    --ge-layer-bg:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.016) 42%, rgba(105, 232, 255, 0.018)),
+        rgba(4, 9, 19, 0.18);
+    --ge-layer-border: rgba(150, 233, 255, 0.26);
+    --ge-layer-edge: rgba(255, 255, 255, 0.14);
+    --ge-layer-shadow:
+        0 28px 72px rgba(0, 0, 0, 0.34),
+        0 0 42px rgba(105, 232, 255, 0.09),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.08);
+    --ge-control-bg:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.018)),
+        rgba(3, 8, 18, 0.46);
+    --ge-control-border: rgba(150, 233, 255, 0.25);
+    --ge-focus-ring: rgba(105, 232, 255, 0.18);
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .auth-panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .brand-panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .topbar,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .hero-panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .command-panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .chart-panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .toolbar,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .arena-card,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .combat-control,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .market-stat,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .stat-card,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .board,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .terminal-board,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .trend-board,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .rank-board,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .live-card,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .reward,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .loot-card,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .modal-box {
+    border: 1px solid var(--ge-layer-border) !important;
+    background: var(--ge-layer-bg) !important;
+    box-shadow: var(--ge-layer-shadow) !important;
+    backdrop-filter: blur(10px) saturate(126%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(126%) !important;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .auth-panel,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .toolbar,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .combat-control,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .modal-box {
+    transform: translateZ(22px);
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .auth-panel::after,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .toolbar::after,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .combat-control::after,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .modal-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.17), transparent 34%),
+        radial-gradient(circle at calc(50% + var(--tilt-x, 0%)) calc(18% + var(--tilt-y, 0%)), rgba(105, 232, 255, 0.2), transparent 18rem);
+    opacity: 0.45 !important;
+    mix-blend-mode: screen;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .form-group label,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .field label,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .panel-top p {
+    color: rgba(148, 255, 213, 0.92) !important;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-shadow: 0 0 18px rgba(115, 255, 202, 0.18);
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) input,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) select,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) textarea,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .sell-input,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .field input,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .field select,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .form-group input,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .input-wrap input {
+    min-height: 52px;
+    border: 1px solid var(--ge-control-border) !important;
+    background: var(--ge-control-bg) !important;
+    color: #f4fbff !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.09),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.08),
+        0 12px 28px rgba(0, 0, 0, 0.18) !important;
+    backdrop-filter: blur(8px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(118%) !important;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease !important;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) input::placeholder,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) textarea::placeholder {
+    color: rgba(191, 213, 232, 0.58) !important;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) input:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) select:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) textarea:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .sell-input:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .field input:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .field select:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .form-group input:focus,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .input-wrap input:focus {
+    border-color: rgba(105, 232, 255, 0.82) !important;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.026)),
+        rgba(4, 11, 23, 0.6) !important;
+    box-shadow:
+        0 0 0 4px var(--ge-focus-ring),
+        0 0 34px rgba(105, 232, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+    transform: translateY(-1px);
+    outline: none;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .btn,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .btn-primary,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .action-btn,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .combat-btn,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .modal-btn {
+    border: 1px solid rgba(150, 233, 255, 0.3) !important;
+    background:
+        linear-gradient(92deg, rgba(115, 255, 202, 0.92), rgba(105, 232, 255, 0.92) 52%, rgba(255, 92, 168, 0.86)),
+        rgba(4, 10, 20, 0.42) !important;
+    color: #06111b !important;
+    box-shadow:
+        0 18px 42px rgba(105, 232, 255, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.18) inset,
+        inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+    text-shadow: none !important;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .btn.danger,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .combat-btn.flee {
+    background:
+        linear-gradient(92deg, rgba(255, 92, 168, 0.86), rgba(255, 209, 102, 0.84)),
+        rgba(4, 10, 20, 0.42) !important;
+}
+
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .btn:hover,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .btn-primary:hover,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .action-btn:hover,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .combat-btn:hover,
+body:is(.ge-force-showcase-ready, .ge-direct-render, .register-page, .dashboard-page, .market-page, .battle-page) .modal-btn:hover {
+    border-color: rgba(255, 255, 255, 0.46) !important;
+    box-shadow:
+        0 24px 56px rgba(105, 232, 255, 0.26),
+        0 0 34px rgba(255, 92, 168, 0.16),
+        0 0 0 1px rgba(255, 255, 255, 0.24) inset !important;
+}

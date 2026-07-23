@@ -1,0 +1,667 @@
+body.market-page {
+    --auction-panel-bg:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.014) 46%, rgba(105, 232, 255, 0.018)),
+        rgba(8, 10, 20, 0.82);
+    --auction-panel-border: rgba(130, 229, 255, 0.22);
+    --auction-field-bg: rgba(5, 8, 18, 0.78);
+    --auction-font-digital: "Oswald", "Orbitron", "Rajdhani", "Consolas", "Microsoft YaHei", monospace;
+}
+
+body.market-page .ge-force-visual-root {
+    z-index: 1;
+    opacity: 0.86;
+}
+
+body.market-page .ge-force-visual-root canvas,
+.ge-force-showcase-ready.market-page .ge-force-visual-root canvas {
+    opacity: 0.88 !important;
+    filter: saturate(1.78) contrast(1.18) brightness(0.92) !important;
+}
+
+body.market-page .app-shell,
+.ge-force-showcase-ready.market-page .app-shell {
+    width: min(1680px, calc(100% - 56px)) !important;
+    display: grid;
+    grid-template-columns: minmax(340px, 0.36fr) minmax(620px, 0.64fr);
+    grid-template-rows: auto auto auto auto;
+    gap: 16px 24px;
+    position: relative;
+    z-index: 10;
+}
+
+body.market-page .topbar {
+    grid-column: 1 / -1;
+    min-height: 64px;
+    padding: 12px 16px;
+}
+
+body.market-page .hero-panel,
+.ge-force-showcase-ready.market-page .hero-panel {
+    grid-column: 1;
+    grid-row: 2 / 5;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 640px;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 22px;
+    overflow: hidden;
+}
+
+body.market-page .toolbar,
+.ge-force-showcase-ready.market-page .toolbar {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: none !important;
+    margin: 0 !important;
+}
+
+body.market-page .panel,
+.ge-force-showcase-ready.market-page .panel {
+    grid-column: 2;
+    max-width: none !important;
+    margin: 0 !important;
+}
+
+body.market-page .panel:nth-of-type(3) {
+    grid-row: 3;
+}
+
+body.market-page .panel:nth-of-type(4) {
+    grid-row: 4;
+}
+
+body.market-page .footer {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+}
+
+body.market-page .topbar,
+body.market-page .hero-panel,
+body.market-page .toolbar,
+body.market-page .panel,
+body.market-page .market-stat,
+body.market-page .modal-box {
+    border-color: var(--auction-panel-border) !important;
+    background:
+        linear-gradient(90deg, rgba(105, 232, 255, 0.72) 0 14px, transparent 14px) left top / 44px 2px no-repeat,
+        linear-gradient(rgba(105, 232, 255, 0.72) 0 14px, transparent 14px) left top / 2px 44px no-repeat,
+        linear-gradient(270deg, rgba(255, 92, 168, 0.5) 0 14px, transparent 14px) right bottom / 44px 2px no-repeat,
+        linear-gradient(0deg, rgba(255, 92, 168, 0.5) 0 14px, transparent 14px) right bottom / 2px 44px no-repeat,
+        var(--auction-panel-bg) !important;
+    box-shadow:
+        0 28px 82px rgba(0, 0, 0, 0.46),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.08) !important;
+    backdrop-filter: blur(25px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(150%) !important;
+    border-radius: 6px;
+}
+
+body.market-page .hero-panel::after {
+    content: "";
+    position: absolute;
+    inset: auto -18% -18% -18%;
+    height: 45%;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 100%, rgba(105, 232, 255, 0.18), transparent 62%);
+}
+
+body.market-page .brand h1 {
+    font-size: 17px;
+    text-shadow: 0 0 18px rgba(105, 232, 255, 0.22);
+}
+
+body.market-page .brand p {
+    font-size: 11px;
+}
+
+body.market-page .logo-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+}
+
+body.market-page .nav-actions {
+    gap: 8px;
+}
+
+body.market-page .player-pill {
+    min-height: 34px;
+    padding: 7px 12px;
+    border-color: rgba(105, 232, 255, 0.34);
+    background: rgba(5, 10, 22, 0.56);
+    color: rgba(230, 250, 255, 0.96);
+    box-shadow: 0 0 20px rgba(105, 232, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    font-family: var(--auction-font-digital);
+    font-weight: 800;
+}
+
+body.market-page .player-pill span {
+    color: rgba(109, 255, 184, 0.86);
+    font-size: 10px;
+}
+
+body.market-page .balance-pill {
+    border-color: rgba(255, 209, 102, 0.32);
+    color: var(--amber);
+    text-shadow: 0 0 12px rgba(255, 209, 102, 0.32);
+}
+
+body.market-page .btn,
+body.market-page .action-btn,
+body.market-page .modal-btn {
+    min-height: 34px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 900;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+body.market-page .primary-action,
+body.market-page .action-btn,
+body.market-page .modal-btn {
+    border-color: rgba(150, 233, 255, 0.34) !important;
+    background:
+        linear-gradient(92deg, rgba(115, 255, 202, 0.92), rgba(105, 232, 255, 0.92) 52%, rgba(255, 92, 168, 0.86)),
+        rgba(4, 10, 20, 0.42) !important;
+    color: #06111b !important;
+    box-shadow:
+        0 18px 42px rgba(105, 232, 255, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+body.market-page .secondary-action,
+body.market-page .btn.danger {
+    border: 1px solid rgba(105, 232, 255, 0.36) !important;
+    background: rgba(3, 9, 20, 0.42) !important;
+    color: rgba(213, 248, 255, 0.94) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 18px rgba(105, 232, 255, 0.08) !important;
+}
+
+body.market-page .btn.danger {
+    border-color: rgba(255, 92, 168, 0.46) !important;
+    color: rgba(255, 205, 224, 0.95) !important;
+}
+
+body.market-page .hero-panel h2 {
+    display: none;
+}
+
+body.market-page .hero-panel p {
+    display: none;
+}
+
+body.market-page .auction-summary {
+    display: grid;
+    gap: 18px;
+}
+
+body.market-page .asset-balance,
+body.market-page .asset-listing {
+    display: grid;
+    gap: 8px;
+}
+
+body.market-page .asset-balance span,
+body.market-page .asset-listing span {
+    color: rgba(159, 177, 200, 0.78);
+    font-family: var(--auction-font-digital);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+body.market-page .asset-balance b,
+body.market-page .asset-listing b {
+    color: var(--cyan);
+    font-family: var(--auction-font-digital);
+    font-weight: 900;
+    line-height: 0.95;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 6px rgba(0, 243, 255, 0.5), 0 0 30px rgba(105, 232, 255, 0.34);
+    overflow-wrap: anywhere;
+}
+
+body.market-page .asset-balance b {
+    font-size: clamp(52px, 6vw, 86px);
+}
+
+body.market-page .asset-listing b {
+    font-size: clamp(38px, 4.2vw, 58px);
+}
+
+body.market-page .asset-serial {
+    max-width: 100%;
+    padding-top: 8px;
+    color: rgba(159, 177, 200, 0.24);
+    font-family: var(--auction-font-digital);
+    font-size: 11px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+    text-shadow: 0 0 18px rgba(105, 232, 255, 0.08);
+}
+
+body.market-page .asset-hologram {
+    position: relative;
+    display: grid;
+    grid-template-rows: minmax(210px, 1fr) auto;
+    gap: 10px;
+    margin-top: 4px;
+    padding: 12px;
+    min-height: 334px;
+    border: 1px solid rgba(105, 232, 255, 0.22);
+    background:
+        radial-gradient(circle at 50% 34%, rgba(105, 232, 255, 0.12), transparent 34%),
+        radial-gradient(circle at 50% 48%, rgba(255, 92, 168, 0.08), transparent 38%),
+        linear-gradient(rgba(105, 232, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(105, 232, 255, 0.045) 1px, transparent 1px),
+        rgba(1, 5, 13, 0.58);
+    background-size: 100% 100%, 100% 100%, 18px 18px, 18px 18px, 100% 100%;
+    box-shadow:
+        inset 0 0 46px rgba(105, 232, 255, 0.07),
+        0 0 34px rgba(105, 232, 255, 0.08);
+    overflow: hidden;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+body.market-page .asset-hologram::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(105, 232, 255, 0.16), transparent);
+    transform: translateY(-100%);
+    animation: assetHoloScan 3.4s linear infinite;
+    mix-blend-mode: screen;
+}
+
+body.market-page .asset-hologram::after {
+    content: "";
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: 82px;
+    height: 20px;
+    pointer-events: none;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(105, 232, 255, 0.18), transparent 70%);
+    filter: blur(4px);
+}
+
+body.market-page .asset-orb-stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: min(82%, 250px);
+    aspect-ratio: 1;
+    justify-self: center;
+    align-self: center;
+    border: 0;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(105, 232, 255, 0.12), transparent 56%),
+        radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.26), transparent 68%);
+    transform: translateY(4px);
+}
+
+body.market-page .asset-orb-stage::before,
+body.market-page .asset-orb-stage::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+}
+
+body.market-page .asset-orb-stage::before {
+    inset: 4%;
+    border: 1px solid rgba(105, 232, 255, 0.22);
+    border-radius: 50%;
+    box-shadow:
+        0 0 28px rgba(105, 232, 255, 0.12),
+        inset 0 0 22px rgba(105, 232, 255, 0.08);
+}
+
+body.market-page .asset-orb-stage::after {
+    left: 12%;
+    right: 12%;
+    bottom: 6%;
+    height: 16px;
+    border: 1px solid rgba(105, 232, 255, 0.16);
+    border-radius: 50%;
+    background: rgba(105, 232, 255, 0.045);
+    box-shadow: 0 0 24px rgba(105, 232, 255, 0.12);
+}
+
+body.market-page .asset-orb-canvas {
+    position: relative;
+    z-index: 1;
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+body.market-page .asset-scan-lines {
+    display: grid;
+    gap: 4px;
+    padding: 10px 11px;
+    border-top: 1px solid rgba(105, 232, 255, 0.14);
+    background: linear-gradient(90deg, rgba(105, 232, 255, 0.05), rgba(255, 92, 168, 0.035), transparent);
+    color: rgba(159, 177, 200, 0.48);
+    font-family: var(--auction-font-digital);
+    font-size: 10px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    position: relative;
+    z-index: 1;
+}
+
+body.market-page .asset-scan-lines span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+body.market-page .asset-scan-lines span::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    flex: 0 0 auto;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+}
+
+body.market-page .asset-scan-lines span:first-child {
+    color: rgba(109, 255, 184, 0.82);
+    text-shadow: 0 0 12px rgba(109, 255, 184, 0.2);
+}
+
+body.market-page .asset-scan-lines span:last-child {
+    color: rgba(159, 177, 200, 0.26);
+}
+
+body.market-page .market-stats {
+    margin-top: 24px;
+    gap: 12px;
+}
+
+@keyframes assetHoloScan {
+    to { transform: translateY(100%); }
+}
+
+body.market-page .market-stat {
+    min-height: 82px;
+    padding: 16px;
+}
+
+body.market-page .market-stat b {
+    margin-bottom: 8px;
+    color: var(--cyan);
+    font-family: var(--auction-font-digital);
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 0 5px rgba(0, 243, 255, 0.45), 0 0 22px rgba(105, 232, 255, 0.3);
+    overflow-wrap: anywhere;
+}
+
+body.market-page .toolbar {
+    grid-template-columns: minmax(260px, 1fr) minmax(138px, 0.42fr) minmax(150px, 0.42fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+}
+
+body.market-page .field label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+body.market-page .field input,
+body.market-page .field select,
+body.market-page .sell-input {
+    min-height: 44px;
+    border-color: rgba(130, 229, 255, 0.2) !important;
+    background: var(--auction-field-bg) !important;
+    color: #f4fbff !important;
+}
+
+body.market-page .refresh-btn {
+    min-width: 160px;
+    justify-self: end;
+    white-space: nowrap;
+}
+
+body.market-page .panel {
+    padding: 16px;
+}
+
+body.market-page .panel-head {
+    min-height: 36px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+}
+
+body.market-page table {
+    min-width: 780px;
+    border-collapse: separate;
+    border-spacing: 0 7px;
+}
+
+body.market-page th,
+body.market-page td {
+    border-bottom: 0;
+    padding: 15px 14px;
+    min-height: 68px;
+    font-size: 14px;
+}
+
+body.market-page th:nth-child(3),
+body.market-page td:nth-child(3) {
+    text-align: right;
+}
+
+body.market-page tbody tr {
+    background:
+        linear-gradient(90deg, rgba(105, 232, 255, 0.08), transparent 42%),
+        rgba(255, 255, 255, 0.036);
+    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    height: 68px;
+}
+
+body.market-page tbody tr:nth-child(even) {
+    background:
+        linear-gradient(90deg, rgba(255, 92, 168, 0.055), transparent 42%),
+        rgba(255, 255, 255, 0.026);
+}
+
+body.market-page tbody tr:hover {
+    transform: translateY(-1px);
+    background: rgba(105, 232, 255, 0.09);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
+}
+
+body.market-page .item-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 320px;
+}
+
+body.market-page .item-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 800;
+    font-size: 15px;
+}
+
+body.market-page .item-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+    border: 1px solid currentColor;
+    background: currentColor;
+    box-shadow: 0 0 13px currentColor;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    opacity: 0.9;
+}
+
+body.market-page .rarity-badge {
+    display: inline-flex;
+    min-width: 46px;
+    justify-content: center;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    background: rgba(255, 255, 255, 0.035);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+body.market-page .price-cell,
+body.market-page .sell-input {
+    color: var(--amber) !important;
+    font-family: var(--auction-font-digital);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 12px rgba(255, 209, 102, 0.26);
+    font-size: 15px;
+}
+
+body.market-page .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+    color: rgba(213, 248, 255, 0.9);
+    font-family: var(--auction-font-digital);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+body.market-page .page-btn {
+    width: 38px;
+    height: 32px;
+    border: 1px solid rgba(105, 232, 255, 0.38);
+    background: rgba(3, 9, 20, 0.58);
+    color: var(--cyan);
+    cursor: pointer;
+    box-shadow: 0 0 16px rgba(105, 232, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+body.market-page .page-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+    box-shadow: none;
+}
+
+body.market-page .page-btn:not(:disabled):hover {
+    border-color: rgba(105, 232, 255, 0.88);
+    box-shadow: 0 0 20px rgba(105, 232, 255, 0.18);
+}
+
+body.market-page .rarity-common,
+body.market-page .rarity-普通 {
+    color: #aab8c9;
+}
+
+body.market-page tr.rarity-common .item-title,
+body.market-page tr.rarity-common .item-icon,
+body.market-page tr.rarity-普通 .item-title,
+body.market-page tr.rarity-普通 .item-icon {
+    color: #aab8c9;
+}
+
+body.market-page .rarity-uncommon,
+body.market-page .rarity-稀有 {
+    color: var(--cyan);
+    text-shadow: 0 0 13px rgba(105, 232, 255, 0.3);
+}
+
+body.market-page tr.rarity-uncommon .item-title,
+body.market-page tr.rarity-uncommon .item-icon,
+body.market-page tr.rarity-稀有 .item-title,
+body.market-page tr.rarity-稀有 .item-icon {
+    color: var(--cyan);
+    text-shadow: 0 0 13px rgba(105, 232, 255, 0.3);
+}
+
+body.market-page .rarity-rare {
+    color: var(--mint);
+    text-shadow: 0 0 13px rgba(109, 255, 184, 0.32);
+}
+
+body.market-page tr.rarity-rare .item-title,
+body.market-page tr.rarity-rare .item-icon {
+    color: var(--mint);
+    text-shadow: 0 0 13px rgba(109, 255, 184, 0.32);
+}
+
+body.market-page .rarity-epic,
+body.market-page .rarity-史诗 {
+    color: #c58cff;
+    text-shadow: 0 0 15px rgba(197, 140, 255, 0.38);
+}
+
+body.market-page tr.rarity-epic .item-title,
+body.market-page tr.rarity-epic .item-icon,
+body.market-page tr.rarity-史诗 .item-title,
+body.market-page tr.rarity-史诗 .item-icon {
+    color: #c58cff;
+    text-shadow: 0 0 15px rgba(197, 140, 255, 0.38);
+}
+
+body.market-page .rarity-legendary,
+body.market-page .rarity-传说 {
+    color: var(--amber);
+    text-shadow: 0 0 18px rgba(255, 209, 102, 0.48);
+}
+
+body.market-page tr.rarity-legendary .item-title,
+body.market-page tr.rarity-legendary .item-icon,
+body.market-page tr.rarity-传说 .item-title,
+body.market-page tr.rarity-传说 .item-icon {
+    color: var(--amber);
+    text-shadow: 0 0 18px rgba(255, 209, 102, 0.48);
+}
+
+@media (max-width: 1100px) {
+    body.market-page .app-shell,
+    .ge-force-showcase-ready.market-page .app-shell {
+        display: block;
+        width: min(1180px, calc(100% - 32px)) !important;
+    }
+
+    body.market-page .hero-panel,
+    .ge-force-showcase-ready.market-page .hero-panel,
+    body.market-page .toolbar,
+    .ge-force-showcase-ready.market-page .toolbar,
+    body.market-page .panel,
+    .ge-force-showcase-ready.market-page .panel {
+        margin-top: 16px !important;
+    }
+
+    body.market-page .hero-panel {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 720px) {
+    body.market-page .app-shell,
+    .ge-force-showcase-ready.market-page .app-shell {
+        width: calc(100% - 20px) !important;
+    }
+
+    body.market-page .toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    body.market-page .refresh-btn,
+    body.market-page .btn,
+    body.market-page .action-btn {
+        width: 100%;
+    }
+}

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="assets/js/app-config.js?v=20260723-0001"></script>
+    <meta name="theme-color" content="#070a10">
+    <title>数据大屏 | Game Exchange</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #070a10;
+            --panel: rgba(10, 17, 28, 0.84);
+            --panel-strong: rgba(12, 22, 36, 0.94);
+            --line: rgba(116, 226, 255, 0.24);
+            --cyan: #6ee7ff;
+            --mint: #6dffb8;
+            --amber: #ffd166;
+            --rose: #ff4d8d;
+            --text: #eef7ff;
+            --muted: #9fb1c8;
+        }
+
+        * { box-sizing: border-box; }
+
+        html {
+            min-height: 100%;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(109, 255, 184, 0.08), transparent 26rem),
+                linear-gradient(225deg, rgba(255, 209, 102, 0.07), transparent 25rem),
+                linear-gradient(145deg, #05070c 0%, #0a1220 46%, #101524 100%);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: rgba(110, 231, 255, 0.18);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(110, 231, 255, 0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 231, 255, 0.045) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.14));
+            pointer-events: none;
+        }
+
+        a { color: inherit; }
+        button, input, select { font: inherit; }
+        [v-cloak] { display: none; }
+
+        .skip-link {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 20;
+            transform: translateY(-140%);
+            padding: 10px 14px;
+            background: var(--cyan);
+            color: #071019;
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .skip-link:focus { transform: translateY(0); }
+
+        .data-stream {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .data-stream span {
+            position: absolute;
+            top: -120px;
+            width: 1px;
+            height: 120px;
+            background: linear-gradient(180deg, transparent, rgba(110, 231, 255, 0.7), transparent);
+            animation: streamFall 5.5s linear infinite;
+        }
+
+        .data-stream span:nth-child(1) { left: 8%; animation-delay: -0.8s; }
+        .data-stream span:nth-child(2) { left: 23%; animation-delay: -2.1s; height: 160px; }
+        .data-stream span:nth-child(3) { left: 41%; animation-delay: -4.3s; }
+        .data-stream span:nth-child(4) { left: 63%; animation-delay: -1.7s; height: 150px; }
+        .data-stream span:nth-child(5) { left: 82%; animation-delay: -3.4s; }
+
+        .app-shell {
+            width: min(1200px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 56px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            min-height: 78px;
+            padding: 18px 20px;
+            border: 1px solid var(--line);
+            background: var(--panel-strong);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.34);
+            backdrop-filter: blur(14px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .logo-mark {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: #071019;
+            font-weight: 900;
+            background: conic-gradient(from 90deg, var(--mint), var(--cyan), var(--amber), var(--mint));
+            clip-path: polygon(50% 0, 95% 24%, 95% 76%, 50% 100%, 5% 76%, 5% 24%);
+            box-shadow: 0 0 28px rgba(110, 231, 255, 0.3);
+            flex: 0 0 auto;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.15;
+            text-wrap: balance;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 8px 10px;
+            border: 1px solid rgba(109,255,184,0.28);
+            background: rgba(109,255,184,0.08);
+            color: var(--mint);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .live-pill::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--mint);
+            box-shadow: 0 0 14px var(--mint);
+            animation: breathe 1.8s ease-in-out infinite;
+        }
+
+        .btn {
+            min-height: 38px;
+            padding: 9px 13px;
+            border: 1px solid rgba(110, 231, 255, 0.28);
+            background: rgba(110, 231, 255, 0.06);
+            color: var(--cyan);
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+            touch-action: manipulation;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--cyan);
+            background: rgba(110, 231, 255, 0.12);
+            box-shadow: 0 12px 26px rgba(110, 231, 255, 0.14);
+        }
+
+        .btn.danger {
+            border-color: rgba(255,77,141,0.35);
+            background: rgba(255,77,141,0.08);
+            color: #ffc2d8;
+        }
+
+        .btn:focus-visible,
+        .stat-card:focus-within {
+            outline: 3px solid rgba(255, 209, 102, 0.75);
+            outline-offset: 3px;
+        }
+
+        .hero-band {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .command-panel,
+        .chart-panel,
+        .panel {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+            backdrop-filter: blur(14px);
+        }
+
+        .command-panel {
+            min-height: 250px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .command-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(110, 231, 255, 0.11), transparent 42%);
+            pointer-events: none;
+        }
+
+        .command-panel > * { position: relative; z-index: 1; }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 30px;
+            padding: 6px 10px;
+            border: 1px solid rgba(109,255,184,0.28);
+            background: rgba(109,255,184,0.08);
+            color: var(--mint);
+            font-size: 12px;
+        }
+
+        .command-panel h2 {
+            margin: 18px 0 12px;
+            font-size: clamp(32px, 5vw, 58px);
+            line-height: 1;
+            text-wrap: balance;
+        }
+
+        .command-panel p {
+            max-width: 720px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        .mini-feed {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .mini-feed div {
+            min-height: 78px;
+            padding: 13px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.045);
+        }
+
+        .mini-feed b {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--cyan);
+            font-size: 22px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mini-feed span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .chart-panel {
+            padding: 18px;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 42px;
+            border-bottom: 1px solid rgba(110,231,255,0.14);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+        }
+
+        .panel-head h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .panel-head span {
+            color: var(--muted);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .trend svg {
+            display: block;
+            width: 100%;
+            height: 170px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+        }
+
+        .stat-card {
+            min-height: 138px;
+            padding: 18px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.045);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            transform: translateX(-100%);
+            animation: scanLine 3.2s ease-in-out infinite;
+        }
+
+        .stat-card span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .stat-card b {
+            display: block;
+            margin: 12px 0 8px;
+            font-size: clamp(28px, 4vw, 42px);
+            line-height: 1;
+            color: var(--cyan);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-card p {
+            margin: 0;
+            color: rgba(159,177,200,0.82);
+            font-size: 12px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .panel {
+            padding: 18px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 560px;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(110,231,255,0.09);
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            color: rgba(159,177,200,0.88);
+            font-weight: 600;
+        }
+
+        td {
+            color: rgba(238,247,255,0.9);
+        }
+
+        .rank-cell {
+            color: var(--amber);
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rarity-普通 { color: #9fb1c8; }
+        .rarity-稀有 { color: var(--cyan); }
+        .rarity-史诗 { color: #c58cff; }
+        .rarity-传说 { color: var(--amber); }
+
+        .log-list {
+            height: 358px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(110,231,255,0.24) transparent;
+        }
+
+        .log-item {
+            display: grid;
+            grid-template-columns: 144px minmax(0, 1fr);
+            gap: 10px;
+            padding: 10px 4px;
+            border-bottom: 1px solid rgba(110,231,255,0.08);
+            animation: fadeIn 260ms ease;
+        }
+
+        .log-time {
+            color: rgba(159,177,200,0.68);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .log-text {
+            color: rgba(238,247,255,0.86);
+            font-size: 13px;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        .log-drop .log-text { color: var(--amber); }
+        .log-online .log-text { color: var(--mint); }
+        .log-kill .log-text { color: var(--cyan); }
+
+        .empty-state {
+            min-height: 180px;
+            display: grid;
+            place-items: center;
+            color: rgba(159,177,200,0.72);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .footer {
+            margin-top: 24px;
+            color: rgba(159,177,200,0.48);
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .dashboard-page .app-shell {
+            width: min(1680px, calc(100% - 56px));
+            display: grid;
+            grid-template-columns: minmax(430px, 620px) minmax(360px, 1fr) minmax(360px, 430px);
+            grid-template-rows: auto auto auto auto auto auto;
+            gap: 16px 24px;
+            padding-top: 24px;
+        }
+
+        .dashboard-page .topbar {
+            grid-column: 1 / -1;
+            grid-row: 1;
+        }
+
+        .dashboard-page .hero-band,
+        .dashboard-page .stats-grid,
+        .dashboard-page .content-grid {
+            display: contents;
+        }
+
+        .dashboard-page .command-panel {
+            grid-column: 1;
+            grid-row: 2;
+            min-height: 276px;
+            margin-top: 0;
+        }
+
+        .dashboard-page .chart-panel {
+            grid-column: 3;
+            grid-row: 2;
+            margin-top: 0;
+        }
+
+        .dashboard-page .stat-card {
+            min-height: 126px;
+        }
+
+        .dashboard-page .stat-card:nth-child(1) {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .dashboard-page .stat-card:nth-child(2) {
+            grid-column: 1;
+            grid-row: 4;
+        }
+
+        .dashboard-page .stat-card:nth-child(3) {
+            grid-column: 3;
+            grid-row: 3;
+        }
+
+        .dashboard-page .stat-card:nth-child(4) {
+            grid-column: 3;
+            grid-row: 4;
+        }
+
+        .dashboard-page .content-grid .panel:first-child {
+            grid-column: 1;
+            grid-row: 5;
+        }
+
+        .dashboard-page .content-grid .panel:last-child {
+            grid-column: 3;
+            grid-row: 5;
+        }
+
+        .dashboard-page .footer {
+            grid-column: 1 / -1;
+            grid-row: 6;
+        }
+
+        @keyframes streamFall {
+            from { transform: translateY(-10%); }
+            to { transform: translateY(110vh); }
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes scanLine {
+            0%, 30% { transform: translateX(-100%); opacity: 0; }
+            55% { opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 980px) {
+            .dashboard-page .app-shell {
+                display: block;
+                width: min(1200px, calc(100% - 32px));
+            }
+
+            .dashboard-page .hero-band,
+            .dashboard-page .stats-grid,
+            .dashboard-page .content-grid {
+                display: grid;
+            }
+
+            .dashboard-page .hero-band,
+            .dashboard-page .stats-grid,
+            .dashboard-page .content-grid,
+            .dashboard-page .footer {
+                margin-top: 16px;
+            }
+
+            .dashboard-page .command-panel,
+            .dashboard-page .chart-panel,
+            .dashboard-page .stat-card,
+            .dashboard-page .content-grid .panel:first-child,
+            .dashboard-page .content-grid .panel:last-child {
+                grid-column: auto;
+                grid-row: auto;
+            }
+
+            .topbar,
+            .hero-band,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .nav-actions {
+                justify-content: flex-start;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 620px) {
+            .app-shell { width: calc(100% - 20px); padding-top: 10px; }
+            .command-panel, .chart-panel, .panel, .topbar { padding: 16px; }
+            .mini-feed,
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-actions,
+            .btn {
+                width: 100%;
+            }
+            .log-item {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/css/neo-ui.css">
+    <link rel="stylesheet" href="assets/css/neo3d-shared.css?v=20260628-0042">
+    <link rel="stylesheet" href="assets/css/dashboard-neo-screen.css?v=20260628-0136">
+    <script defer src="assets/js/neo3d/force-showcase.js?v=20260628-0224"></script>
+</head>
+<body class="dashboard-page">
+<a class="skip-link" href="#main">跳到主内容</a>
+<div class="data-stream" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+</div>
+<div class="dashboard-hud-frame" aria-hidden="true">
+    <span class="corner-tl"></span>
+    <span class="corner-tr"></span>
+    <span class="corner-bl"></span>
+    <span class="corner-br"></span>
+</div>
+
+<main id="app" class="app-shell" aria-label="Game Exchange 数据大屏">
+    <header class="topbar">
+        <div class="brand">
+            <div class="logo-mark" aria-hidden="true">GE</div>
+            <div>
+                <h1>Game Exchange 数据大屏</h1>
+                <p>全服交易、在线状态与稀有掉落实时监控</p>
+            </div>
+        </div>
+        <nav class="nav-actions" aria-label="主导航">
+            <span class="live-pill">{{ currentTime }}</span>
+            <a href="battle.html" class="btn">进入战斗</a>
+            <a href="market.html" class="btn">交易市场</a>
+            <button class="btn danger" type="button" @click="logout">退出登录</button>
+        </nav>
+    </header>
+
+    <section id="main" class="hero-band">
+        <div class="command-panel">
+            <span class="eyebrow">Realtime Command Center</span>
+            <h2>
+                <span class="metric-title">GLOBAL ECONOMY TOTAL</span>
+                <strong>{{ formatGold(stats.totalGold) }}</strong>
+            </h2>
+            <p>
+                这里汇总在线玩家、市场挂单、今日成交额、金币池和稀有装备掉落。数据每 3 秒刷新，让后台大屏更像正在运转的游戏交易终端。
+            </p>
+            <div class="mini-feed" aria-label="系统状态">
+                <div><b>LIVE</b><span>数据链路状态</span></div>
+                <div><b>3S</b><span>自动刷新周期</span></div>
+                <div><b>{{ logs.length }}</b><span>实时事件缓存</span></div>
+            </div>
+        </div>
+
+        <aside class="chart-panel" aria-label="成交趋势">
+            <div class="panel-head">
+                <h3>成交趋势</h3>
+                <span>自动刷新 3s</span>
+            </div>
+            <div class="trend" aria-hidden="true">
+                <svg viewBox="0 0 280 170" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="trendAreaGradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#6ee7ff" stop-opacity="0.14" />
+                            <stop offset="58%" stop-color="#6dffb8" stop-opacity="0.08" />
+                            <stop offset="100%" stop-color="#6ee7ff" stop-opacity="0.02" />
+                        </linearGradient>
+                        <filter id="trendGlow" x="-20%" y="-40%" width="140%" height="180%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <path class="trend-grid" d="M0 136 L280 136 M0 92 L280 92 M0 48 L280 48" stroke-width="1" />
+                    <polygon class="trend-area" :points="trendAreaPoints" fill="url(#trendAreaGradient)" />
+                    <polyline class="trend-line-glow" :points="trendPoints" filter="url(#trendGlow)" />
+                    <polyline class="trend-line" :points="trendPoints" />
+                    <circle v-for="(point, index) in trendPointList" :key="index" class="trend-point" :cx="point.x" :cy="point.y" r="3.2" filter="url(#trendGlow)" />
+                </svg>
+            </div>
+        </aside>
+    </section>
+
+    <section class="stats-grid" aria-label="核心指标">
+        <article class="stat-card">
+            <span>ONLINE PLAYERS</span>
+            <b>{{ formatNumber(stats.onlineCount) }}</b>
+            <p>当前在线人数</p>
+        </article>
+        <article class="stat-card">
+            <span>ON SALE ITEMS</span>
+            <b>{{ formatNumber(stats.onSaleCount) }}</b>
+            <p>市场在售商品</p>
+        </article>
+        <article class="stat-card">
+            <span>TODAY VOLUME</span>
+            <b>{{ formatGold(stats.todayVolume) }}</b>
+            <p>今日成交总额</p>
+        </article>
+        <article class="stat-card">
+            <span>TOTAL GOLD</span>
+            <b>{{ formatGold(stats.totalGold) }}</b>
+            <p>全服玩家金币池</p>
+        </article>
+    </section>
+
+    <section class="content-grid">
+        <article class="panel">
+            <div class="panel-head">
+                <h3>Top 10 稀有掉落</h3>
+                <span>{{ topItems.length }} 件记录</span>
+            </div>
+            <div v-if="topItems.length === 0" class="empty-state">
+                暂无稀有装备掉落，等待玩家开出下一件装备。
+            </div>
+            <div class="table-wrap" v-else>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>装备名称</th>
+                        <th>稀有度</th>
+                        <th>获得玩家</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="(item, index) in topItems" :key="item.id || index">
+                        <td class="rank-cell">{{ index + 1 }}</td>
+                        <td>{{ item.itemName || "未知装备" }}</td>
+                        <td><span :class="'rarity-' + item.rarity">{{ item.rarity || "普通" }}</span></td>
+                        <td>{{ item.owner || "匿名玩家" }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="panel">
+            <div class="panel-head">
+                <h3>全服实时动态</h3>
+                <span aria-live="polite">{{ logs.length }} 条</span>
+            </div>
+            <div class="log-list" aria-live="polite">
+                <div v-if="logs.length === 0" class="empty-state">等待事件中…</div>
+                <div v-for="(log, index) in logs" :key="index" class="log-item" :class="log.type">
+                    <span class="log-time">{{ log.time }}</span>
+                    <span class="log-text">{{ log.text }}</span>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <div class="footer">Game Exchange · Real-Time Dashboard</div>
+</main>
+
+<script>
+    window.GE_CURRENT_VM = new Vue({
+        el: "#app",
+        data: {
+            currentTime: "",
+            stats: {
+                onlineCount: 0,
+                onSaleCount: 0,
+                todayVolume: 0,
+                totalGold: 0,
+                top10Items: []
+            },
+            logs: [],
+            trend: [12, 18, 22, 28, 35, 40, 38, 45, 52, 58],
+            timer: null,
+            clockTimer: null,
+            numberFormatter: new Intl.NumberFormat("zh-CN")
+        },
+        computed: {
+            topItems() {
+                return Array.isArray(this.stats.top10Items) ? this.stats.top10Items : [];
+            },
+            trendPointList() {
+                const max = Math.max.apply(null, this.trend);
+                const min = Math.min.apply(null, this.trend);
+                return this.trend.map((value, index) => {
+                    const x = index * (280 / (this.trend.length - 1));
+                    const y = 145 - ((value - min) / Math.max(max - min, 1)) * 112;
+                    return {
+                        x: x.toFixed(1),
+                        y: y.toFixed(1)
+                    };
+                });
+            },
+            trendPoints() {
+                return this.trendPointList.map(point => point.x + "," + point.y).join(" ");
+            },
+            trendAreaPoints() {
+                return "0,162 " + this.trendPoints + " 280,162";
+            }
+        },
+        mounted() {
+            this.updateClock();
+            this.clockTimer = setInterval(this.updateClock, 1000);
+            this.fetchStats();
+            this.timer = setInterval(this.fetchStats, 3000);
+        },
+        beforeDestroy() {
+            clearInterval(this.timer);
+            clearInterval(this.clockTimer);
+        },
+        methods: {
+            logout() {
+                axios.post(window.GE_API("/logout")).finally(() => {
+                    localStorage.clear();
+                    window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+                });
+            },
+            updateClock() {
+                this.currentTime = new Intl.DateTimeFormat("zh-CN", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false
+                }).format(new Date());
+            },
+            fetchStats() {
+                axios.get(window.GE_API("/stats"))
+                    .then(res => {
+                        if (res.data.code !== 200) return;
+                        const now = res.data;
+                        this.stats = Object.assign({}, this.stats, now);
+                        this.pushTrend(now.todayVolume || now.onSaleCount || now.onlineCount || 0);
+                        if (Array.isArray(now.eventLogs)) {
+                            this.logs = now.eventLogs.map(this.mapLog).slice(0, 60);
+                        }
+                    })
+                    .catch(() => {
+                        this.logs = this.logs.length ? this.logs : [{
+                            type: "log-kill",
+                            time: this.currentTime,
+                            text: "数据服务暂时不可用，请稍后刷新页面。"
+                        }];
+                    });
+            },
+            mapLog(event) {
+                let type = "log-kill";
+                if (event.eventType === "ITEM_DROP") type = "log-drop";
+                if (event.eventType === "ONLINE_STATUS") type = "log-online";
+                const time = event.createTime
+                    ? event.createTime.substring(0, 19).replace("T", " ")
+                    : this.currentTime;
+                return {
+                    type: type,
+                    time: time,
+                    text: (event.playerName || "系统") + " " + (event.eventDesc || "产生了一条新动态")
+                };
+            },
+            pushTrend(value) {
+                const numeric = Number(value) || 0;
+                const next = Math.max(1, Math.round(numeric / 100) || numeric);
+                this.trend.push(next);
+                this.trend = this.trend.slice(-10);
+            },
+            formatNumber(value) {
+                return this.numberFormatter.format(Number(value) || 0);
+            },
+            formatGold(value) {
+                const numeric = Number(value) || 0;
+                if (numeric >= 10000) return (numeric / 10000).toFixed(1) + "W";
+                return this.numberFormatter.format(numeric);
+            }
+        }
+    });
+</script>
+</body>
+</html>

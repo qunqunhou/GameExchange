@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="assets/js/app-config.js?v=20260723-0001"></script>
+    <meta name="theme-color" content="#070a10">
+    <title>交易市场 | Game Exchange</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #070a10;
+            --panel: rgba(10, 17, 28, 0.84);
+            --panel-strong: rgba(12, 22, 36, 0.94);
+            --line: rgba(116, 226, 255, 0.24);
+            --cyan: #6ee7ff;
+            --mint: #6dffb8;
+            --amber: #ffd166;
+            --rose: #ff4d8d;
+            --text: #eef7ff;
+            --muted: #9fb1c8;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { min-height: 100%; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(110, 231, 255, 0.08), transparent 25rem),
+                linear-gradient(225deg, rgba(255, 77, 141, 0.07), transparent 25rem),
+                linear-gradient(145deg, #05070c 0%, #0a1220 46%, #101524 100%);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: rgba(110, 231, 255, 0.18);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(110, 231, 255, 0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 231, 255, 0.045) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.14));
+            pointer-events: none;
+        }
+
+        a { color: inherit; }
+        button, input, select { font: inherit; }
+        [v-cloak] { display: none; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .skip-link {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 20;
+            transform: translateY(-140%);
+            padding: 10px 14px;
+            background: var(--cyan);
+            color: #071019;
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .skip-link:focus { transform: translateY(0); }
+
+        .data-stream {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .data-stream span {
+            position: absolute;
+            top: -120px;
+            width: 1px;
+            height: 120px;
+            background: linear-gradient(180deg, transparent, rgba(110, 231, 255, 0.7), transparent);
+            animation: streamFall 5.5s linear infinite;
+        }
+
+        .data-stream span:nth-child(1) { left: 9%; animation-delay: -0.7s; }
+        .data-stream span:nth-child(2) { left: 28%; animation-delay: -2.4s; height: 160px; }
+        .data-stream span:nth-child(3) { left: 49%; animation-delay: -4.1s; }
+        .data-stream span:nth-child(4) { left: 69%; animation-delay: -1.6s; height: 150px; }
+        .data-stream span:nth-child(5) { left: 88%; animation-delay: -3.5s; }
+
+        .app-shell {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 56px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .topbar,
+        .hero-panel,
+        .panel,
+        .market-stat {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+            backdrop-filter: blur(14px);
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            min-height: 78px;
+            padding: 18px 20px;
+            background: var(--panel-strong);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .logo-mark {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: #071019;
+            font-weight: 900;
+            background: conic-gradient(from 90deg, var(--mint), var(--cyan), var(--amber), var(--mint));
+            clip-path: polygon(50% 0, 95% 24%, 95% 76%, 50% 100%, 5% 76%, 5% 24%);
+            box-shadow: 0 0 28px rgba(110, 231, 255, 0.3);
+            flex: 0 0 auto;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.15;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 8px 10px;
+            border: 1px solid rgba(109,255,184,0.28);
+            background: rgba(109,255,184,0.08);
+            color: var(--mint);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn {
+            min-height: 38px;
+            padding: 9px 13px;
+            border: 1px solid rgba(110, 231, 255, 0.28);
+            background: rgba(110, 231, 255, 0.06);
+            color: var(--cyan);
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+            touch-action: manipulation;
+        }
+
+        .btn:hover,
+        .action-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--cyan);
+            background: rgba(110, 231, 255, 0.12);
+            box-shadow: 0 12px 26px rgba(110, 231, 255, 0.14);
+        }
+
+        .btn.danger {
+            border-color: rgba(255,77,141,0.35);
+            background: rgba(255,77,141,0.08);
+            color: #ffc2d8;
+        }
+
+        .btn:focus-visible,
+        .action-btn:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        .modal-btn:focus-visible {
+            outline: 3px solid rgba(255, 209, 102, 0.75);
+            outline-offset: 3px;
+        }
+
+        .hero-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+            gap: 18px;
+            margin-top: 18px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(110, 231, 255, 0.1), transparent 38%);
+            pointer-events: none;
+        }
+
+        .hero-panel > * { position: relative; z-index: 1; }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            padding: 6px 10px;
+            border: 1px solid rgba(109,255,184,0.28);
+            background: rgba(109,255,184,0.08);
+            color: var(--mint);
+            font-size: 12px;
+        }
+
+        .hero-panel h2 {
+            margin: 18px 0 12px;
+            font-size: clamp(32px, 5vw, 58px);
+            line-height: 1;
+            text-wrap: balance;
+        }
+
+        .hero-panel p {
+            max-width: 680px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        .market-stats {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .market-stat {
+            min-height: 84px;
+            padding: 14px;
+            background: rgba(255,255,255,0.045);
+        }
+
+        .market-stat b {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--cyan);
+            font-size: 26px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .market-stat span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 170px 170px auto;
+            gap: 10px;
+            margin-top: 16px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            color: #d9ecff;
+            font-size: 13px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            min-height: 42px;
+            padding: 10px 12px;
+            border: 1px solid rgba(159, 177, 200, 0.32);
+            background: rgba(5, 9, 17, 0.68);
+            color: var(--text);
+            outline: none;
+            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .field input::placeholder { color: rgba(159,177,200,0.58); }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: var(--cyan);
+            background: rgba(8, 16, 29, 0.9);
+            box-shadow: 0 0 0 4px rgba(110, 231, 255, 0.13);
+        }
+
+        .panel {
+            margin-top: 16px;
+            padding: 18px;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 42px;
+            border-bottom: 1px solid rgba(110,231,255,0.14);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+        }
+
+        .panel-head h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .panel-head span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(110,231,255,0.09);
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            color: rgba(159,177,200,0.88);
+            font-weight: 600;
+        }
+
+        td {
+            color: rgba(238,247,255,0.9);
+        }
+
+        .item-name {
+            max-width: 240px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .price-cell {
+            color: var(--amber);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rarity-common,
+        .rarity-普通 { color: #9fb1c8; }
+        .rarity-uncommon,
+        .rarity-稀有 { color: var(--cyan); }
+        .rarity-rare { color: var(--mint); }
+        .rarity-epic,
+        .rarity-史诗 { color: #c58cff; }
+        .rarity-legendary,
+        .rarity-传说 { color: var(--amber); }
+
+        .sell-input {
+            width: 140px;
+            min-height: 38px;
+            padding: 8px 10px;
+            border: 1px solid rgba(159, 177, 200, 0.32);
+            background: rgba(5, 9, 17, 0.68);
+            color: var(--text);
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .action-btn {
+            min-height: 36px;
+            padding: 8px 13px;
+            border: 1px solid rgba(110,231,255,0.28);
+            background: rgba(110,231,255,0.06);
+            color: var(--cyan);
+            cursor: pointer;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+            touch-action: manipulation;
+        }
+
+        .action-btn.sell {
+            border-color: rgba(255,77,141,0.32);
+            color: #ffc2d8;
+            background: rgba(255,77,141,0.08);
+        }
+
+        .empty-state {
+            min-height: 180px;
+            display: grid;
+            place-items: center;
+            color: rgba(159,177,200,0.72);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.72);
+            overscroll-behavior: contain;
+        }
+
+        .modal-box {
+            width: min(420px, 100%);
+            border: 1px solid rgba(110,231,255,0.28);
+            background: rgba(10,17,28,0.98);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.46);
+            padding: 24px;
+            text-align: center;
+            animation: fadeIn 180ms ease;
+        }
+
+        .modal-box.success { border-color: rgba(109,255,184,0.38); }
+        .modal-box.error { border-color: rgba(255,77,141,0.42); }
+
+        .modal-title {
+            margin: 0 0 10px;
+            font-size: 22px;
+        }
+
+        .modal-msg {
+            margin: 0 0 20px;
+            color: var(--muted);
+            line-height: 1.65;
+            overflow-wrap: anywhere;
+        }
+
+        .modal-btn {
+            min-height: 40px;
+            min-width: 120px;
+            border: 1px solid rgba(110,231,255,0.3);
+            background: rgba(110,231,255,0.08);
+            color: var(--cyan);
+            cursor: pointer;
+        }
+
+        .footer {
+            margin-top: 24px;
+            color: rgba(159,177,200,0.48);
+            text-align: center;
+            font-size: 12px;
+        }
+
+        @keyframes streamFall {
+            from { transform: translateY(-10%); }
+            to { transform: translateY(110vh); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 980px) {
+            .topbar,
+            .hero-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .nav-actions {
+                justify-content: flex-start;
+            }
+
+            .toolbar {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .app-shell { width: calc(100% - 20px); padding-top: 10px; }
+            .hero-panel, .panel, .topbar { padding: 16px; }
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+            .nav-actions,
+            .btn,
+            .toolbar .btn {
+                width: 100%;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/css/neo-ui.css">
+    <link rel="stylesheet" href="assets/css/neo3d-shared.css?v=20260628-0042">
+    <link rel="stylesheet" href="assets/css/market-neo-auction.css?v=20260628-0180">
+    <script defer src="assets/js/neo3d/force-showcase.js?v=20260628-0224"></script>
+</head>
+<body class="market-page">
+<a class="skip-link" href="#main">跳到主内容</a>
+<div class="data-stream" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<main id="app" class="app-shell" aria-label="Game Exchange 交易市场">
+    <div class="modal-mask" v-if="modal.show" @click.self="closeModal" role="dialog" aria-modal="true" aria-live="polite">
+        <div class="modal-box" :class="modal.type">
+            <h2 class="modal-title">{{ modal.title }}</h2>
+            <p class="modal-msg">{{ modal.msg }}</p>
+            <button class="modal-btn" type="button" @click="closeModal">确认</button>
+        </div>
+    </div>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="logo-mark" aria-hidden="true">GE</div>
+            <div>
+                <h1>Game Exchange 交易市场</h1>
+                <p>购买装备、挂售背包道具、追踪全服价格</p>
+            </div>
+        </div>
+        <nav class="nav-actions" aria-label="主导航">
+            <span class="player-pill account-pill"><span>PLAYER</span>{{ username || "未登录" }}</span>
+            <span class="player-pill balance-pill"><span>GOLD</span>{{ formatNumber(gold) }}</span>
+            <a href="battle.html" class="btn primary-action">进入战斗</a>
+            <a href="dashboard.html" class="btn secondary-action">数据大屏</a>
+            <button class="btn danger" type="button" @click="logout">退出登录</button>
+        </nav>
+    </header>
+
+    <section id="main" class="hero-panel">
+        <div class="auction-summary">
+            <span class="eyebrow">AUCTION HOUSE // LIVE</span>
+            <div class="asset-balance">
+                <span>GOLD BALANCE</span>
+                <b>{{ formatNumber(gold) }}</b>
+            </div>
+            <div class="asset-listing">
+                <span>ACTIVE LISTINGS</span>
+                <b>{{ marketList.length }}</b>
+            </div>
+            <div class="asset-hologram">
+                <div class="asset-orb-stage" ref="assetOrbStage" aria-hidden="true"></div>
+                <div class="asset-scan-lines" aria-hidden="true">
+                    <span>CORE SCANNING...</span>
+                    <span>MARKET FLOW: {{ marketList.length }} UNITS</span>
+                    <span>WALLET SIGNAL: {{ formatNumber(gold) }}</span>
+                    <span>{{ inventorySerial }}</span>
+                </div>
+            </div>
+        </div>
+        <aside class="market-stats" aria-label="市场数据">
+            <div class="market-stat"><b>{{ filteredMarket.length }}</b><span>当前匹配商品</span></div>
+            <div class="market-stat"><b>{{ myItems.length }}</b><span>背包可挂售</span></div>
+            <div class="market-stat"><b>{{ inventoryValue }}</b><span>库存估值信号</span></div>
+        </aside>
+    </section>
+
+    <section class="toolbar" aria-label="市场筛选">
+        <div class="field">
+            <label for="search">搜索装备</label>
+            <input id="search" name="search" type="search" v-model.trim="filters.search"
+                   placeholder="例如：星辉长剑…" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+            <label for="rarity">稀有度</label>
+            <select id="rarity" name="rarity" v-model="filters.rarity">
+                <option value="">全部</option>
+                <option value="普通">普通</option>
+                <option value="稀有">稀有</option>
+                <option value="史诗">史诗</option>
+                <option value="传说">传说</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="sort">排序</label>
+            <select id="sort" name="sort" v-model="filters.sort">
+                <option value="default">默认</option>
+                <option value="priceAsc">价格从低到高</option>
+                <option value="priceDesc">价格从高到低</option>
+            </select>
+        </div>
+        <button class="btn primary-action refresh-btn" type="button" @click="loadAll">REFRESH // 刷新列表</button>
+    </section>
+
+    <section class="panel" aria-labelledby="market-title">
+        <div class="panel-head">
+            <h3 id="market-title">在售商品</h3>
+            <span aria-live="polite">{{ marketPageLabel }} · {{ filteredMarket.length }} / {{ marketList.length }} 件</span>
+        </div>
+
+        <div v-if="filteredMarket.length === 0" class="empty-state">
+            暂无匹配商品，调整筛选或刷新市场。
+        </div>
+        <div class="table-wrap" v-else>
+            <table>
+                <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>稀有度</th>
+                    <th>价格</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="item in pagedMarket" :key="item.id" :class="rarityClass(item.rarity)">
+                    <td class="item-name" :title="item.itemName">
+                        <span class="item-icon" aria-hidden="true"></span>
+                        <span class="item-title">{{ item.itemName }}</span>
+                    </td>
+                    <td><span class="rarity-badge" :class="rarityClass(item.rarity)">{{ item.rarity || "普通" }}</span></td>
+                    <td class="price-cell price-col">{{ formatNumber(item.price) }}</td>
+                    <td><button class="action-btn" type="button" @click="buy(item.id)">购买</button></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" v-if="filteredMarket.length > marketPageSize" aria-label="商品分页">
+            <button type="button" class="page-btn" @click="prevMarketPage" :disabled="currentMarketPage <= 1">&lt;</button>
+            <span>{{ currentMarketPage }} / {{ totalMarketPages }}</span>
+            <button type="button" class="page-btn" @click="nextMarketPage" :disabled="currentMarketPage >= totalMarketPages">&gt;</button>
+        </div>
+    </section>
+
+    <section class="panel" aria-labelledby="inventory-title">
+        <div class="panel-head">
+            <h3 id="inventory-title">我的道具</h3>
+            <span>{{ inventoryPageLabel }} · {{ myItems.length }} 件可挂售</span>
+        </div>
+
+        <div v-if="myItems.length === 0" class="empty-state">
+            你目前没有可挂售的道具。去战斗获得装备后再来上架。
+        </div>
+        <div class="table-wrap" v-else>
+            <table>
+                <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>稀有度</th>
+                    <th>挂售价格</th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="item in pagedMyItems" :key="item.id" :class="rarityClass(item.rarity)">
+                    <td class="item-name" :title="item.itemName">
+                        <span class="item-icon" aria-hidden="true"></span>
+                        <span class="item-title">{{ item.itemName }}</span>
+                    </td>
+                    <td><span class="rarity-badge" :class="rarityClass(item.rarity)">{{ item.rarity || "普通" }}</span></td>
+                    <td>
+                        <label class="sr-only" :for="'sell-price-' + item.id">挂售价格</label>
+                        <input :id="'sell-price-' + item.id" class="sell-input" type="number"
+                               v-model.number="item.sellPrice" min="1" inputmode="numeric"
+                               placeholder="金币价格…" autocomplete="off">
+                    </td>
+                    <td><button class="action-btn sell" type="button" @click="sell(item)">挂售</button></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" v-if="myItems.length > inventoryPageSize" aria-label="我的道具分页">
+            <button type="button" class="page-btn" @click="prevInventoryPage" :disabled="currentInventoryPage <= 1">&lt;</button>
+            <span>{{ currentInventoryPage }} / {{ totalInventoryPages }}</span>
+            <button type="button" class="page-btn" @click="nextInventoryPage" :disabled="currentInventoryPage >= totalInventoryPages">&gt;</button>
+        </div>
+    </section>
+
+    <div class="footer">Game Exchange · Player Market Terminal</div>
+</main>
+
+<script>
+    window.GE_CURRENT_VM = new Vue({
+        el: "#app",
+        data: {
+            username: localStorage.getItem("username") || "",
+            gold: Number(localStorage.getItem("gold")) || 0,
+            marketList: [],
+            myItems: [],
+            filters: {
+                search: "",
+                rarity: "",
+                sort: "default"
+            },
+            marketPage: 1,
+            marketPageSize: 7,
+            inventoryPage: 1,
+            inventoryPageSize: 7,
+            modal: {
+                show: false,
+                type: "success",
+                title: "",
+                msg: ""
+            },
+            numberFormatter: new Intl.NumberFormat("zh-CN")
+        },
+        computed: {
+            filteredMarket() {
+                const search = this.filters.search.toLowerCase();
+                let list = this.marketList.filter(item => {
+                    const name = String(item.itemName || "").toLowerCase();
+                    const rarity = String(item.rarity || "");
+                    return (!search || name.includes(search)) &&
+                        (!this.filters.rarity || rarity === this.filters.rarity);
+                });
+                if (this.filters.sort === "priceAsc") {
+                    list = list.slice().sort((a, b) => Number(a.price) - Number(b.price));
+                }
+                if (this.filters.sort === "priceDesc") {
+                    list = list.slice().sort((a, b) => Number(b.price) - Number(a.price));
+                }
+                return list;
+            },
+            totalMarketPages() {
+                return Math.max(1, Math.ceil(this.filteredMarket.length / this.marketPageSize));
+            },
+            currentMarketPage() {
+                return Math.min(Math.max(this.marketPage, 1), this.totalMarketPages);
+            },
+            pagedMarket() {
+                const start = (this.currentMarketPage - 1) * this.marketPageSize;
+                return this.filteredMarket.slice(start, start + this.marketPageSize);
+            },
+            marketPageLabel() {
+                const start = this.filteredMarket.length === 0 ? 0 : (this.currentMarketPage - 1) * this.marketPageSize + 1;
+                const end = Math.min(this.currentMarketPage * this.marketPageSize, this.filteredMarket.length);
+                return "PAGE " + start + "-" + end;
+            },
+            totalInventoryPages() {
+                return Math.max(1, Math.ceil(this.myItems.length / this.inventoryPageSize));
+            },
+            currentInventoryPage() {
+                return Math.min(Math.max(this.inventoryPage, 1), this.totalInventoryPages);
+            },
+            pagedMyItems() {
+                const start = (this.currentInventoryPage - 1) * this.inventoryPageSize;
+                return this.myItems.slice(start, start + this.inventoryPageSize);
+            },
+            inventoryPageLabel() {
+                const start = this.myItems.length === 0 ? 0 : (this.currentInventoryPage - 1) * this.inventoryPageSize + 1;
+                const end = Math.min(this.currentInventoryPage * this.inventoryPageSize, this.myItems.length);
+                return "PAGE " + start + "-" + end;
+            },
+            highestPrice() {
+                const prices = this.marketList.map(item => Number(item.price) || 0);
+                return this.formatNumber(Math.max.apply(null, prices.concat([0])));
+            },
+            inventoryValue() {
+                const listedTotal = this.marketList.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+                return this.formatNumber(listedTotal + this.gold);
+            },
+            inventorySerial() {
+                const seed = [
+                    Number(localStorage.getItem("playerId")) || 0,
+                    Number(this.gold) || 0,
+                    this.marketList.length,
+                    this.myItems.length
+                ].join("-");
+                let hash = 2166136261;
+                for (let i = 0; i < seed.length; i++) {
+                    hash ^= seed.charCodeAt(i);
+                    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+                }
+                const first = (hash >>> 0).toString(16).toUpperCase().padStart(8, "0");
+                const second = ((hash * 2654435761) >>> 0).toString(16).toUpperCase().padStart(8, "0");
+                return "INV-" + first + "-" + second + "-NODE-ASIA-01";
+            }
+        },
+        watch: {
+            filters: {
+                deep: true,
+                handler() {
+                    this.marketPage = 1;
+                    const params = new URLSearchParams();
+                    if (this.filters.search) params.set("search", this.filters.search);
+                    if (this.filters.rarity) params.set("rarity", this.filters.rarity);
+                    if (this.filters.sort !== "default") params.set("sort", this.filters.sort);
+                    const query = params.toString();
+                    history.replaceState(null, "", query ? "market.html?" + query : "market.html");
+                }
+            }
+        },
+        mounted() {
+            if (!localStorage.getItem("playerId")) {
+                window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+                return;
+            }
+            this.readQuery();
+            this.loadAll();
+            this.$nextTick(this.initAssetOrb);
+        },
+        beforeDestroy() {
+            this.disposeAssetOrb();
+        },
+        methods: {
+            readQuery() {
+                const params = new URLSearchParams(location.search);
+                this.filters.search = params.get("search") || "";
+                this.filters.rarity = params.get("rarity") || "";
+                this.filters.sort = params.get("sort") || "default";
+            },
+            loadAll() {
+                this.loadMarket();
+                this.loadMyItems();
+                this.refreshGold();
+            },
+            showModal(type, msg) {
+                this.modal.type = type;
+                this.modal.show = true;
+                this.modal.title = type === "success" ? "交易成功" : "交易失败";
+                this.modal.msg = msg;
+            },
+            closeModal() {
+                this.modal.show = false;
+            },
+            prevMarketPage() {
+                this.marketPage = Math.max(1, this.currentMarketPage - 1);
+            },
+            nextMarketPage() {
+                this.marketPage = Math.min(this.totalMarketPages, this.currentMarketPage + 1);
+            },
+            prevInventoryPage() {
+                this.inventoryPage = Math.max(1, this.currentInventoryPage - 1);
+            },
+            nextInventoryPage() {
+                this.inventoryPage = Math.min(this.totalInventoryPages, this.currentInventoryPage + 1);
+            },
+            initAssetOrb() {
+                const container = this.$refs.assetOrbStage;
+                if (!container || !window.THREE || this.assetOrbRuntime) return;
+
+                const THREE = window.THREE;
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 30);
+                camera.position.set(0, 0, 5.35);
+
+                const renderer = new THREE.WebGLRenderer({
+                    alpha: true,
+                    antialias: true,
+                    powerPreference: "high-performance"
+                });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.4));
+                renderer.setClearColor(0x000000, 0);
+                renderer.domElement.className = "asset-orb-canvas";
+                container.appendChild(renderer.domElement);
+
+                const group = new THREE.Group();
+                scene.add(group);
+
+                const coreMaterial = new THREE.ShaderMaterial({
+                    transparent: true,
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending,
+                    uniforms: {
+                        uTime: { value: 0 },
+                        uActivity: { value: 0.35 }
+                    },
+                    vertexShader: [
+                        "varying vec2 vUv;",
+                        "varying vec3 vNormalView;",
+                        "void main(){",
+                        "  vUv=uv;",
+                        "  vNormalView=normalize(normalMatrix*normal);",
+                        "  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);",
+                        "}"
+                    ].join("\n"),
+                    fragmentShader: [
+                        "precision highp float;",
+                        "uniform float uTime;",
+                        "uniform float uActivity;",
+                        "varying vec2 vUv;",
+                        "varying vec3 vNormalView;",
+                        "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
+                        "float noise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);vec2 u=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),u.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);}",
+                        "void main(){",
+                        "  float flow=noise(vUv*6.0+vec2(uTime*0.08,-uTime*0.05));",
+                        "  float ring=sin((vUv.y+flow*0.25)*24.0+uTime*1.4)*0.5+0.5;",
+                        "  float fresnel=pow(1.0-abs(vNormalView.z),2.0);",
+                        "  vec3 cold=vec3(0.25,0.92,1.0);",
+                        "  vec3 hot=vec3(1.0,0.36,0.72);",
+                        "  vec3 color=mix(cold,hot,smoothstep(0.56,1.0,ring)*uActivity);",
+                        "  float alpha=(0.2+ring*0.34+fresnel*0.72)*(0.62+uActivity*0.38);",
+                        "  gl_FragColor=vec4(color,alpha);",
+                        "}"
+                    ].join("\n")
+                });
+
+                const core = new THREE.Mesh(new THREE.SphereGeometry(0.96, 56, 32), coreMaterial);
+                group.add(core);
+
+                const wire = new THREE.Mesh(
+                    new THREE.IcosahedronGeometry(1.18, 1),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x6ee7ff,
+                        wireframe: true,
+                        transparent: true,
+                        opacity: 0.22,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false
+                    })
+                );
+                group.add(wire);
+
+                [
+                    { radius: 1.38, color: 0x6ee7ff, opacity: 0.42, rotation: [1.14, 0.18, 0.2] },
+                    { radius: 1.66, color: 0xff5ca8, opacity: 0.34, rotation: [1.34, -0.22, 0.7] },
+                    { radius: 1.18, color: 0x73ffca, opacity: 0.22, rotation: [1.58, 0.0, 0.0] }
+                ].forEach(item => {
+                    const ring = new THREE.Mesh(
+                        new THREE.TorusGeometry(item.radius, 0.01, 8, 160),
+                        new THREE.MeshBasicMaterial({
+                            color: item.color,
+                            transparent: true,
+                            opacity: item.opacity,
+                            blending: THREE.AdditiveBlending,
+                            depthWrite: false
+                        })
+                    );
+                    ring.rotation.set(item.rotation[0], item.rotation[1], item.rotation[2]);
+                    group.add(ring);
+                });
+
+                const resize = () => {
+                    const rect = container.getBoundingClientRect();
+                    const size = Math.max(160, Math.min(rect.width || 260, rect.height || 260));
+                    renderer.setSize(size, size, false);
+                    camera.aspect = 1;
+                    camera.updateProjectionMatrix();
+                };
+
+                let frameId = 0;
+                const animate = (time) => {
+                    const activity = Math.min(1, (Number(this.gold) || 0) / 120000 + this.marketList.length / 80);
+                    const t = time * 0.001;
+                    coreMaterial.uniforms.uTime.value = t;
+                    coreMaterial.uniforms.uActivity.value += (activity - coreMaterial.uniforms.uActivity.value) * 0.04;
+                    group.rotation.y = t * 0.42;
+                    group.rotation.x = Math.sin(t * 0.6) * 0.08;
+                    core.scale.setScalar(1 + Math.sin(t * 1.8) * 0.028 + activity * 0.025);
+                    wire.rotation.x = -t * 0.18;
+                    wire.rotation.y = t * 0.24;
+                    group.children.forEach((child, index) => {
+                        if (child.geometry && child.geometry.type === "TorusGeometry") {
+                            child.rotation.z += 0.004 + index * 0.002;
+                        }
+                    });
+                    renderer.render(scene, camera);
+                    if (this.assetOrbRuntime) this.assetOrbRuntime.frameId = requestAnimationFrame(animate);
+                };
+
+                const resizeObserver = window.ResizeObserver ? new ResizeObserver(resize) : null;
+                if (resizeObserver) resizeObserver.observe(container);
+                window.addEventListener("resize", resize, { passive: true });
+                resize();
+                frameId = requestAnimationFrame(animate);
+
+                this.assetOrbRuntime = {
+                    renderer,
+                    scene,
+                    coreMaterial,
+                    frameId,
+                    resize,
+                    resizeObserver
+                };
+            },
+            disposeAssetOrb() {
+                const runtime = this.assetOrbRuntime;
+                if (!runtime) return;
+                cancelAnimationFrame(runtime.frameId);
+                window.removeEventListener("resize", runtime.resize);
+                if (runtime.resizeObserver) runtime.resizeObserver.disconnect();
+                runtime.scene.traverse(object => {
+                    if (object.geometry) object.geometry.dispose();
+                    if (object.material) {
+                        if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
+                        else object.material.dispose();
+                    }
+                });
+                runtime.renderer.dispose();
+                if (runtime.renderer.domElement && runtime.renderer.domElement.parentNode) {
+                    runtime.renderer.domElement.parentNode.removeChild(runtime.renderer.domElement);
+                }
+                this.assetOrbRuntime = null;
+            },
+            handleUnauthorized() {
+                localStorage.clear();
+                window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+            },
+            loadMarket() {
+                axios.get(window.GE_API("/market/list"))
+                    .then(res => {
+                        this.marketList = Array.isArray(res.data) ? res.data : [];
+                        this.marketPage = Math.min(this.marketPage, this.totalMarketPages);
+                    })
+                    .catch(err => {
+                        if (err.response && err.response.status === 401) {
+                            this.handleUnauthorized();
+                        } else {
+                            this.showModal("error", "加载市场数据失败，请稍后刷新。");
+                        }
+                    });
+            },
+            loadMyItems() {
+                axios.get(window.GE_API("/player/items"))
+                    .then(res => {
+                        const list = Array.isArray(res.data) ? res.data : [];
+                        this.myItems = list.map(item => Object.assign({}, item, { sellPrice: "" }));
+                        this.inventoryPage = Math.min(this.inventoryPage, this.totalInventoryPages);
+                    })
+                    .catch(err => {
+                        if (err.response && err.response.status === 401) this.handleUnauthorized();
+                    });
+            },
+            refreshGold() {
+                const playerId = localStorage.getItem("playerId");
+                if (!playerId) return;
+                axios.get(window.GE_API("/player/info") + "?playerId=" + encodeURIComponent(playerId))
+                    .then(res => {
+                        if (res.data.code === 200) {
+                            this.gold = Number(res.data.gold) || 0;
+                            localStorage.setItem("gold", this.gold);
+                        }
+                    });
+            },
+            buy(marketId) {
+                const params = new URLSearchParams();
+                params.append("marketId", marketId);
+                axios.post(window.GE_API("/trade/buy"), params)
+                    .then(res => {
+                        if (res.data.code === 200) {
+                            this.showModal("success", res.data.msg || "购买完成。");
+                            this.loadAll();
+                        } else {
+                            this.showModal("error", res.data.msg || "购买失败，请检查金币余额。");
+                        }
+                    })
+                    .catch(err => {
+                        if (err.response && err.response.status === 401) {
+                            this.handleUnauthorized();
+                        } else {
+                            this.showModal("error", "服务器异常，请稍后重试。");
+                        }
+                    });
+            },
+            sell(item) {
+                if (!item.sellPrice || item.sellPrice <= 0) {
+                    this.showModal("error", "请输入大于 0 的挂售价格。");
+                    return;
+                }
+                const params = new URLSearchParams();
+                params.append("itemId", item.id);
+                params.append("price", item.sellPrice);
+                axios.post(window.GE_API("/trade/sell"), params)
+                    .then(res => {
+                        if (res.data.code === 200) {
+                            this.showModal("success", res.data.msg || "道具已上架。");
+                            this.loadAll();
+                        } else {
+                            this.showModal("error", res.data.msg || "挂售失败，请稍后重试。");
+                        }
+                    })
+                    .catch(err => {
+                        if (err.response && err.response.status === 401) {
+                            this.handleUnauthorized();
+                        } else {
+                            this.showModal("error", "服务器异常，请稍后重试。");
+                        }
+                    });
+            },
+            logout() {
+                axios.post(window.GE_API("/logout")).finally(() => {
+                    localStorage.clear();
+                    window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+                });
+            },
+            rarityClass(rarity) {
+                return "rarity-" + String(rarity || "common").toLowerCase();
+            },
+            formatNumber(value) {
+                return this.numberFormatter.format(Number(value) || 0);
+            }
+        }
+    });
+</script>
+</body>
+</html>

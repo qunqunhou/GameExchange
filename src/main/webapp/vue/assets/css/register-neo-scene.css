@@ -1,0 +1,329 @@
+body.register-page {
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: #000 !important;
+}
+
+body.register-page .brand-panel {
+    display: none !important;
+}
+
+.register-hud-corners {
+    position: fixed;
+    inset: 24px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.register-hud-corners span {
+    position: absolute;
+    width: 86px;
+    height: 86px;
+    border-color: rgba(0, 243, 255, 0.34);
+    filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.24));
+}
+
+.register-hud-corners span:nth-child(1) {
+    top: 0;
+    left: 0;
+    border-top: 1px solid;
+    border-left: 1px solid;
+}
+
+.register-hud-corners span:nth-child(2) {
+    top: 0;
+    right: 0;
+    border-top: 1px solid;
+    border-right: 1px solid;
+}
+
+.register-hud-corners span:nth-child(3) {
+    bottom: 0;
+    left: 0;
+    border-bottom: 1px solid;
+    border-left: 1px solid;
+}
+
+.register-hud-corners span:nth-child(4) {
+    right: 0;
+    bottom: 0;
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+}
+
+.register-auth-identity {
+    position: fixed;
+    top: clamp(24px, 4vh, 48px);
+    left: clamp(24px, 4vw, 58px);
+    z-index: 4;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    pointer-events: none;
+}
+
+.register-logo {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    color: #041017;
+    font-weight: 900;
+    background: linear-gradient(135deg, #73ffca, #00f3ff 52%, #ff007f);
+    clip-path: polygon(12% 0, 100% 0, 100% 78%, 80% 100%, 0 100%, 0 18%);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.34);
+}
+
+.register-auth-identity strong {
+    display: block;
+    color: #a9faff;
+    font-size: clamp(18px, 2vw, 28px);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 18px rgba(0, 243, 255, 0.44);
+}
+
+.register-auth-identity span {
+    display: block;
+    margin-top: 6px;
+    color: rgba(204, 214, 255, 0.38);
+    font: 10px/1.1 "Consolas", "Segoe UI", monospace;
+    letter-spacing: 0.08em;
+}
+
+.register-network {
+    position: fixed;
+    right: clamp(24px, 5vw, 72px);
+    bottom: clamp(24px, 5vh, 62px);
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: rgba(196, 211, 255, 0.42);
+    font: 10px/1 "Consolas", monospace;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+}
+
+.network-radar {
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(0, 243, 255, 0.28);
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(0, 243, 255, 0.44), transparent 32%, rgba(255, 0, 127, 0.22), transparent 68%);
+    animation: registerRadar 6s linear infinite;
+}
+
+body.register-page .auth-shell {
+    width: min(640px, calc(100% - 40px)) !important;
+    min-height: 100vh;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    place-items: center !important;
+    padding: clamp(112px, 14vh, 150px) 0 clamp(86px, 10vh, 120px) !important;
+    margin: 0 auto !important;
+    perspective: 1200px;
+}
+
+body.register-page .auth-panel {
+    width: min(560px, 100%) !important;
+    max-width: 560px !important;
+    min-height: auto;
+    padding: 40px 42px 36px !important;
+    clip-path: polygon(26px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 26px);
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.018)),
+        linear-gradient(rgba(0, 243, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.035) 1px, transparent 1px),
+        rgba(4, 9, 20, 0.34) !important;
+    background-size: auto, 18px 18px, 18px 18px, auto;
+    border: 1px solid transparent !important;
+    box-shadow:
+        0 34px 92px rgba(0, 0, 0, 0.52),
+        0 0 60px rgba(0, 243, 255, 0.13),
+        0 0 48px rgba(255, 0, 127, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    animation: registerPanelIn 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+body.register-page .auth-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    clip-path: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #00f3ff, rgba(0, 243, 255, 0.08) 44%, rgba(255, 0, 127, 0.82));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+body.register-page .panel-top {
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+body.register-page .panel-top p {
+    color: #73ffca !important;
+    font: 800 12px/1 "Consolas", monospace;
+    letter-spacing: 0.12em;
+}
+
+body.register-page .panel-top h1 {
+    color: #f6fbff;
+    font-size: clamp(30px, 3vw, 38px);
+    text-shadow: 0 0 28px rgba(0, 243, 255, 0.24);
+}
+
+body.register-page .form-group {
+    margin-bottom: 22px !important;
+}
+
+body.register-page .form-group label {
+    color: rgba(115, 255, 202, 0.92) !important;
+    font: 800 12px/1 "Consolas", monospace;
+    letter-spacing: 0.1em;
+}
+
+.reg-input-wrap {
+    position: relative;
+}
+
+.reg-input-wrap input {
+    padding-left: 48px !important;
+    padding-right: 104px !important;
+}
+
+.reg-input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    z-index: 2;
+    border: 1px solid rgba(0, 243, 255, 0.48);
+    box-shadow: 0 0 14px rgba(0, 243, 255, 0.18);
+    pointer-events: none;
+}
+
+.user-grid {
+    background:
+        linear-gradient(90deg, transparent 45%, rgba(115, 255, 202, 0.72) 45% 55%, transparent 55%),
+        linear-gradient(0deg, transparent 45%, rgba(115, 255, 202, 0.72) 45% 55%, transparent 55%);
+}
+
+.key-lock {
+    clip-path: polygon(18% 38%, 18% 100%, 82% 100%, 82% 38%, 68% 38%, 68% 24%, 50% 12%, 32% 24%, 32% 38%);
+}
+
+.shield-check {
+    clip-path: polygon(50% 0, 86% 14%, 78% 76%, 50% 100%, 22% 76%, 14% 14%);
+}
+
+.field-state {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: 74px;
+    text-align: right;
+    color: rgba(196, 211, 255, 0);
+    font: 9px/1 "Consolas", monospace;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+}
+
+.field-state.valid {
+    color: rgba(115, 255, 202, 0.86);
+    text-shadow: 0 0 12px rgba(115, 255, 202, 0.32);
+}
+
+.field-state.invalid {
+    color: rgba(255, 92, 168, 0.88);
+    text-shadow: 0 0 12px rgba(255, 92, 168, 0.28);
+}
+
+body.register-page .hint {
+    margin-top: 9px;
+    color: rgba(196, 211, 255, 0.46);
+    font-size: 12px;
+}
+
+body.register-page .strength-bar {
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 220ms ease, margin-top 220ms ease, opacity 220ms ease;
+}
+
+body.register-page .strength-bar.visible {
+    max-height: 8px;
+    margin-top: 10px;
+    opacity: 1;
+}
+
+body.register-page .strength-tip {
+    min-height: 16px;
+    margin-top: 6px;
+    color: rgba(196, 211, 255, 0.58);
+}
+
+body.register-page .btn-primary {
+    margin-top: 4px;
+}
+
+body.register-page .links {
+    margin-top: 24px;
+    text-align: center;
+}
+
+body.register-page .links a {
+    color: rgba(155, 248, 255, 0.88) !important;
+    font-weight: 900;
+    text-decoration: none;
+    text-shadow: 0 0 16px rgba(0, 243, 255, 0.28);
+    animation: registerLinkPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes registerPanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.975);
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes registerRadar {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes registerLinkPulse {
+    50% { opacity: 0.58; }
+}
+
+@media (max-width: 840px) {
+    .register-network,
+    .register-hud-corners {
+        display: none;
+    }
+
+    .register-auth-identity {
+        position: absolute;
+    }
+
+    body.register-page .auth-shell {
+        width: min(560px, calc(100% - 24px)) !important;
+        padding-top: 130px !important;
+    }
+
+    body.register-page .auth-panel {
+        padding: 30px 24px !important;
+    }
+}

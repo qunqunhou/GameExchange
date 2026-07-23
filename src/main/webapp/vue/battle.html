@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="assets/js/app-config.js?v=20260723-0001"></script>
+    <meta name="theme-color" content="#070a10">
+    <title>战斗竞技场 | Game Exchange</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #070a10;
+            --panel: rgba(10, 17, 28, 0.84);
+            --panel-strong: rgba(12, 22, 36, 0.94);
+            --line: rgba(116, 226, 255, 0.24);
+            --cyan: #6ee7ff;
+            --mint: #6dffb8;
+            --amber: #ffd166;
+            --rose: #ff4d8d;
+            --text: #eef7ff;
+            --muted: #9fb1c8;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { min-height: 100%; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(109, 255, 184, 0.08), transparent 25rem),
+                linear-gradient(225deg, rgba(255, 77, 141, 0.08), transparent 25rem),
+                linear-gradient(145deg, #05070c 0%, #0a1220 46%, #101524 100%);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: rgba(110, 231, 255, 0.18);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(110, 231, 255, 0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 231, 255, 0.045) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.14));
+            pointer-events: none;
+        }
+
+        a { color: inherit; }
+        button { font: inherit; }
+        [v-cloak] { display: none; }
+
+        .skip-link {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 20;
+            transform: translateY(-140%);
+            padding: 10px 14px;
+            background: var(--cyan);
+            color: #071019;
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .skip-link:focus { transform: translateY(0); }
+
+        .data-stream {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .data-stream span {
+            position: absolute;
+            top: -120px;
+            width: 1px;
+            height: 120px;
+            background: linear-gradient(180deg, transparent, rgba(255, 209, 102, 0.72), transparent);
+            animation: streamFall 5.5s linear infinite;
+        }
+
+        .data-stream span:nth-child(1) { left: 8%; animation-delay: -1.1s; }
+        .data-stream span:nth-child(2) { left: 23%; animation-delay: -2.8s; height: 160px; }
+        .data-stream span:nth-child(3) { left: 45%; animation-delay: -4.4s; }
+        .data-stream span:nth-child(4) { left: 67%; animation-delay: -1.8s; height: 150px; }
+        .data-stream span:nth-child(5) { left: 88%; animation-delay: -3.2s; }
+
+        .app-shell {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 24px 0 56px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .topbar,
+        .arena-card,
+        .panel,
+        .combat-control {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+            backdrop-filter: blur(14px);
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            min-height: 78px;
+            padding: 18px 20px;
+            background: var(--panel-strong);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .logo-mark {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: #071019;
+            font-weight: 900;
+            background: conic-gradient(from 90deg, var(--amber), var(--mint), var(--rose), var(--amber));
+            clip-path: polygon(50% 0, 95% 24%, 95% 76%, 50% 100%, 5% 76%, 5% 24%);
+            box-shadow: 0 0 28px rgba(255, 209, 102, 0.3);
+            flex: 0 0 auto;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1.15;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 8px 10px;
+            border: 1px solid rgba(255,209,102,0.3);
+            background: rgba(255,209,102,0.08);
+            color: var(--amber);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn,
+        .combat-btn,
+        .modal-btn {
+            min-height: 38px;
+            padding: 9px 13px;
+            border: 1px solid rgba(110, 231, 255, 0.28);
+            background: rgba(110, 231, 255, 0.06);
+            color: var(--cyan);
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+            touch-action: manipulation;
+        }
+
+        .btn:hover,
+        .combat-btn:hover,
+        .modal-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--cyan);
+            background: rgba(110, 231, 255, 0.12);
+            box-shadow: 0 12px 26px rgba(110, 231, 255, 0.14);
+        }
+
+        .btn.danger,
+        .combat-btn.flee {
+            border-color: rgba(255,77,141,0.35);
+            background: rgba(255,77,141,0.08);
+            color: #ffc2d8;
+        }
+
+        .combat-btn.attack {
+            border-color: rgba(109,255,184,0.35);
+            background: rgba(109,255,184,0.08);
+            color: var(--mint);
+        }
+
+        .combat-btn.skill {
+            border-color: rgba(255,209,102,0.35);
+            background: rgba(255,209,102,0.08);
+            color: var(--amber);
+        }
+
+        .combat-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.42;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn:focus-visible,
+        .combat-btn:focus-visible,
+        .modal-btn:focus-visible {
+            outline: 3px solid rgba(255, 209, 102, 0.75);
+            outline-offset: 3px;
+        }
+
+        .hero-panel {
+            margin-top: 18px;
+            padding: 24px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255, 209, 102, 0.12), transparent 42%);
+            pointer-events: none;
+        }
+
+        .hero-panel > * { position: relative; z-index: 1; }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            padding: 6px 10px;
+            border: 1px solid rgba(255,209,102,0.3);
+            background: rgba(255,209,102,0.08);
+            color: var(--amber);
+            font-size: 12px;
+        }
+
+        .hero-panel h2 {
+            margin: 18px 0 12px;
+            font-size: clamp(32px, 5vw, 58px);
+            line-height: 1;
+            text-wrap: balance;
+        }
+
+        .hero-panel p {
+            max-width: 780px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        .arena-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
+            gap: 16px;
+            align-items: stretch;
+            margin-top: 16px;
+        }
+
+        .arena-card {
+            min-height: 320px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .arena-card::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        }
+
+        .arena-card.monster::after {
+            background: linear-gradient(90deg, transparent, var(--rose), transparent);
+        }
+
+        .card-kicker {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .char-name {
+            margin: 0 0 16px;
+            font-size: 24px;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+
+        .avatar {
+            min-height: 118px;
+            display: grid;
+            place-items: center;
+            font-size: 72px;
+            animation: idle 2.6s ease-in-out infinite;
+        }
+
+        .avatar.attacking {
+            animation: playerAttack 420ms ease;
+        }
+
+        .monster .avatar.attacking {
+            animation: monsterAttack 420ms ease;
+        }
+
+        .hp-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 8px 0 6px;
+            color: var(--muted);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .hp-bar {
+            height: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            overflow: hidden;
+        }
+
+        .hp-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--mint), var(--cyan));
+            transition: width 380ms ease;
+        }
+
+        .monster .hp-fill {
+            background: linear-gradient(90deg, var(--rose), #ff9f6e);
+        }
+
+        .hp-fill.low {
+            background: linear-gradient(90deg, var(--rose), var(--amber));
+        }
+
+        .combat-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .combat-stats div {
+            min-height: 60px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .combat-stats b {
+            display: block;
+            color: var(--cyan);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .combat-stats span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .vs-panel {
+            min-height: 260px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+        }
+
+        .vs-panel b {
+            display: block;
+            color: var(--amber);
+            font-size: 42px;
+            text-shadow: 0 0 22px rgba(255,209,102,0.38);
+        }
+
+        .vs-panel span {
+            display: block;
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .combat-control {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding: 16px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .panel {
+            padding: 18px;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 42px;
+            border-bottom: 1px solid rgba(110,231,255,0.14);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+        }
+
+        .panel-head h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .panel-head span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .battle-log {
+            height: 320px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(110,231,255,0.24) transparent;
+        }
+
+        .log-item {
+            display: grid;
+            grid-template-columns: 60px minmax(0, 1fr);
+            gap: 10px;
+            padding: 10px 4px;
+            border-bottom: 1px solid rgba(110,231,255,0.08);
+            animation: fadeIn 260ms ease;
+        }
+
+        .log-round {
+            color: rgba(159,177,200,0.68);
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .log-text {
+            color: rgba(238,247,255,0.86);
+            font-size: 13px;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        .player-hit .log-text { color: var(--mint); }
+        .monster-hit .log-text { color: #ff9fb9; }
+        .drop .log-text { color: var(--amber); }
+        .system .log-text { color: var(--cyan); }
+
+        .loot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .loot-card {
+            min-height: 104px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.045);
+            text-align: center;
+            animation: popIn 260ms ease;
+        }
+
+        .loot-icon {
+            display: block;
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .loot-name {
+            margin-bottom: 5px;
+            overflow-wrap: anywhere;
+        }
+
+        .loot-rarity {
+            font-size: 12px;
+        }
+
+        .rarity-普通 { color: #9fb1c8; }
+        .rarity-稀有 { color: var(--cyan); }
+        .rarity-史诗 { color: #c58cff; }
+        .rarity-传说 { color: var(--amber); }
+
+        .gold-reward {
+            display: inline-flex;
+            align-items: center;
+            min-height: 38px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,209,102,0.28);
+            background: rgba(255,209,102,0.08);
+            color: var(--amber);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .empty-state {
+            min-height: 160px;
+            display: grid;
+            place-items: center;
+            color: rgba(159,177,200,0.72);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.72);
+            overscroll-behavior: contain;
+        }
+
+        .modal-box {
+            width: min(460px, 100%);
+            border: 1px solid rgba(110,231,255,0.28);
+            background: rgba(10,17,28,0.98);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.46);
+            padding: 24px;
+            text-align: center;
+            animation: fadeIn 180ms ease;
+        }
+
+        .modal-box.win { border-color: rgba(109,255,184,0.4); }
+        .modal-box.lose { border-color: rgba(255,77,141,0.42); }
+
+        .modal-icon {
+            display: block;
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .modal-title {
+            margin: 0 0 10px;
+            font-size: 26px;
+        }
+
+        .modal-sub {
+            margin: 0 0 20px;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .footer {
+            margin-top: 24px;
+            color: rgba(159,177,200,0.48);
+            text-align: center;
+            font-size: 12px;
+        }
+
+        @keyframes streamFall {
+            from { transform: translateY(-10%); }
+            to { transform: translateY(110vh); }
+        }
+
+        @keyframes idle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes playerAttack {
+            0% { transform: translateX(0) scale(1); }
+            42% { transform: translateX(34px) scale(1.08); }
+            100% { transform: translateX(0) scale(1); }
+        }
+
+        @keyframes monsterAttack {
+            0% { transform: translateX(0) scale(1); }
+            42% { transform: translateX(-34px) scale(1.08); }
+            100% { transform: translateX(0) scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @media (max-width: 980px) {
+            .topbar,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .nav-actions {
+                justify-content: flex-start;
+            }
+
+            .arena-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vs-panel {
+                min-height: 86px;
+            }
+        }
+
+        @media (max-width: 620px) {
+            .app-shell { width: calc(100% - 20px); padding-top: 10px; }
+            .hero-panel, .panel, .topbar, .arena-card, .combat-control { padding: 16px; }
+            .nav-actions,
+            .btn,
+            .combat-btn {
+                width: 100%;
+            }
+            .combat-stats {
+                grid-template-columns: 1fr;
+            }
+            .log-item {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/css/neo-ui.css">
+    <link rel="stylesheet" href="assets/css/neo3d-shared.css?v=20260628-0042">
+    <link rel="stylesheet" href="assets/css/battle-neo-arena.css?v=20260628-0318">
+    <script defer src="assets/js/neo3d/force-showcase.js?v=20260628-0224"></script>
+</head>
+<body class="battle-page">
+<a class="skip-link" href="#main">跳到主内容</a>
+<div class="data-stream" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<main id="app" class="app-shell" aria-label="Game Exchange 战斗竞技场">
+    <div class="modal-mask" v-if="modal.show" role="dialog" aria-modal="true" aria-live="polite">
+        <div class="modal-box" :class="modal.type">
+            <span class="modal-icon" aria-hidden="true">{{ modal.icon }}</span>
+            <h2 class="modal-title">{{ modal.title }}</h2>
+            <p class="modal-sub">{{ modal.sub }}</p>
+            <div class="modal-actions">
+                <button class="modal-btn" type="button" @click="nextBattle">再战一局</button>
+                <button class="modal-btn" type="button" @click="goMarket">去交易所</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="logo-mark" aria-hidden="true">GE</div>
+            <div>
+                <h1>Battle Arena</h1>
+                <p>击败怪物，获得金币和可交易装备</p>
+            </div>
+        </div>
+        <nav class="nav-actions" aria-label="主导航">
+            <span class="player-pill">玩家 {{ username }} · 金币 {{ formatNumber(gold) }}</span>
+            <a href="market.html" class="btn">交易市场</a>
+            <a href="dashboard.html" class="btn">数据大屏</a>
+            <button class="btn danger" type="button" @click="logout">退出登录</button>
+        </nav>
+    </header>
+
+    <section id="main" class="hero-panel">
+        <span class="eyebrow">Loot Combat Terminal</span>
+        <h2>打一场，装备进市场</h2>
+        <p>
+            每场战斗都会结算金币，胜利时有概率掉落装备。掉落会写入后端，随后可以进入交易市场挂售，形成完整的游戏经济闭环。
+        </p>
+    </section>
+
+    <section class="arena-grid" aria-label="战斗双方">
+        <article class="arena-card player">
+            <div class="card-kicker">PLAYER</div>
+            <h3 class="char-name">{{ username }}</h3>
+            <div class="avatar" :class="{ attacking: playerAttacking }" aria-hidden="true">🛡️</div>
+            <div class="hp-label">
+                <span>生命值</span>
+                <span>{{ playerHp }} / {{ playerMaxHp }}</span>
+            </div>
+            <div class="hp-bar" aria-hidden="true">
+                <div class="hp-fill" :class="{ low: playerHpPct < 30 }" :style="{ width: playerHpPct + '%' }"></div>
+            </div>
+            <div class="combat-stats">
+                <div><b>{{ playerAtk[0] }}-{{ playerAtk[1] }}</b><span>攻击区间</span></div>
+                <div><b>{{ skillCooldown || "就绪" }}</b><span>技能冷却</span></div>
+            </div>
+        </article>
+
+        <div class="vs-panel" aria-hidden="true">
+            <div class="vs-core">
+                <b>VS</b>
+                <span>回合 {{ round }}</span>
+                <i>DUEL SCANNING</i>
+            </div>
+        </div>
+
+        <article class="arena-card monster">
+            <div class="card-kicker">MONSTER</div>
+            <h3 class="char-name">{{ monster.name }}</h3>
+            <div class="avatar" :class="{ attacking: monsterAttacking }" aria-hidden="true">{{ monster.emoji }}</div>
+            <div class="hp-label">
+                <span>生命值</span>
+                <span>{{ monsterHp }} / {{ monster.maxHp }}</span>
+            </div>
+            <div class="hp-bar" aria-hidden="true">
+                <div class="hp-fill" :class="{ low: monsterHpPct < 30 }" :style="{ width: monsterHpPct + '%' }"></div>
+            </div>
+            <div class="combat-stats">
+                <div><b>{{ monster.atk ? monster.atk[0] + "-" + monster.atk[1] : "0" }}</b><span>攻击区间</span></div>
+                <div><b>{{ Math.round((monster.dropRate || 0) * 100) }}%</b><span>掉落概率</span></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="combat-control" aria-label="战斗操作">
+        <button class="combat-btn attack" type="button" :disabled="battleOver || isBusy" @click="doAttack">
+            普通攻击
+        </button>
+        <button class="combat-btn skill" type="button" :disabled="battleOver || isBusy || skillCooldown > 0" @click="doSkill">
+            技能攻击{{ skillCooldown > 0 ? "（" + skillCooldown + "）" : "" }}
+        </button>
+        <button class="combat-btn flee" type="button" :disabled="battleOver || isBusy" @click="doFlee">
+            逃跑
+        </button>
+    </section>
+
+    <section class="content-grid">
+        <article class="panel">
+            <div class="panel-head">
+                <h3>战斗日志</h3>
+                <span>{{ battleLogs.length }} 条</span>
+            </div>
+            <div class="battle-log" ref="battleLog" aria-live="polite">
+                <div v-for="(log, index) in battleLogs" :key="index" class="log-item" :class="[log.type, { critical: isCriticalLog(log) }]">
+                    <span class="log-round">R{{ log.round }}</span>
+                    <span class="log-text">{{ log.text }}</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="panel">
+            <div class="panel-head">
+                <h3>战利品</h3>
+                <span>{{ loots.length }} 件装备</span>
+            </div>
+            <div v-if="loots.length === 0 && goldReward === 0" class="loot-grid loot-placeholders" aria-hidden="true">
+                <div class="loot-card placeholder" v-for="index in 3" :key="'slot-' + index">
+                    <span class="loot-icon">?</span>
+                    <div class="loot-name">EMPTY SLOT</div>
+                    <div class="loot-rarity">WAITING DROP</div>
+                </div>
+            </div>
+            <div v-else>
+                <div v-if="goldReward > 0" class="gold-reward">获得金币 {{ formatNumber(goldReward) }}</div>
+                <div class="loot-grid">
+                    <div class="loot-card" v-for="(loot, index) in loots" :key="index">
+                        <span class="loot-icon" aria-hidden="true">⚔️</span>
+                        <div class="loot-name">{{ loot.itemName }}</div>
+                        <div class="loot-rarity" :class="'rarity-' + loot.rarity">{{ loot.rarity }}</div>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <div class="footer">Game Exchange · Battle Arena</div>
+</main>
+
+<script>
+    const MONSTERS = [
+        { name: "哥布林", emoji: "🧌", maxHp: 80, atk: [8, 15], gold: [20, 60], dropRate: 0.30 },
+        { name: "骷髅卫士", emoji: "💀", maxHp: 120, atk: [12, 20], gold: [40, 100], dropRate: 0.35 },
+        { name: "石头怪", emoji: "🪨", maxHp: 160, atk: [10, 18], gold: [50, 120], dropRate: 0.40 },
+        { name: "火焰魔", emoji: "🔥", maxHp: 200, atk: [18, 30], gold: [80, 180], dropRate: 0.45 },
+        { name: "冰霜巨人", emoji: "❄️", maxHp: 280, atk: [22, 38], gold: [100, 220], dropRate: 0.50 },
+        { name: "毒蜂女王", emoji: "🐝", maxHp: 150, atk: [15, 25], gold: [60, 140], dropRate: 0.40 },
+        { name: "暗影刺客", emoji: "🗡️", maxHp: 180, atk: [25, 40], gold: [90, 200], dropRate: 0.45 },
+        { name: "地狱犬", emoji: "🐺", maxHp: 240, atk: [20, 35], gold: [110, 240], dropRate: 0.50 },
+        { name: "龙族幼崽", emoji: "🐉", maxHp: 350, atk: [30, 50], gold: [150, 300], dropRate: 0.60 },
+        { name: "远古巨兽", emoji: "🐲", maxHp: 500, atk: [40, 65], gold: [200, 500], dropRate: 0.70 }
+    ];
+
+    const ITEMS = [
+        { itemName: "破旧长剑", rarity: "普通" },
+        { itemName: "铁制盔甲", rarity: "普通" },
+        { itemName: "皮革护腕", rarity: "普通" },
+        { itemName: "精钢战斧", rarity: "稀有" },
+        { itemName: "魔法长杖", rarity: "稀有" },
+        { itemName: "龙鳞护甲", rarity: "史诗" },
+        { itemName: "雷霆之锤", rarity: "史诗" },
+        { itemName: "天罚神剑", rarity: "传说" },
+        { itemName: "混沌法典", rarity: "传说" },
+        { itemName: "虚空碎片", rarity: "传说" }
+    ];
+
+    window.GE_CURRENT_VM = new Vue({
+        el: "#app",
+        data: {
+            username: localStorage.getItem("username") || "玩家",
+            gold: Number(localStorage.getItem("gold")) || 0,
+            playerId: localStorage.getItem("playerId"),
+            playerMaxHp: 200,
+            playerHp: 200,
+            playerAtk: [20, 35],
+            monster: {},
+            monsterHp: 0,
+            round: 0,
+            battleOver: false,
+            isBusy: false,
+            playerAttacking: false,
+            monsterAttacking: false,
+            skillCooldown: 0,
+            loots: [],
+            goldReward: 0,
+            battleLogs: [],
+            modal: {
+                show: false,
+                type: "win",
+                icon: "",
+                title: "",
+                sub: ""
+            },
+            numberFormatter: new Intl.NumberFormat("zh-CN")
+        },
+        computed: {
+            playerHpPct() {
+                return Math.max(0, Math.round(this.playerHp / this.playerMaxHp * 100));
+            },
+            monsterHpPct() {
+                return this.monster.maxHp ? Math.max(0, Math.round(this.monsterHp / this.monster.maxHp * 100)) : 0;
+            }
+        },
+        mounted() {
+            if (!localStorage.getItem("playerId")) {
+                window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+                return;
+            }
+            this.initBattle();
+        },
+        methods: {
+            initBattle() {
+                const monster = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+                this.monster = Object.assign({}, monster);
+                this.monsterHp = monster.maxHp;
+                this.playerHp = this.playerMaxHp;
+                this.round = 0;
+                this.battleOver = false;
+                this.isBusy = false;
+                this.loots = [];
+                this.goldReward = 0;
+                this.battleLogs = [];
+                this.skillCooldown = 0;
+                this.modal.show = false;
+                this.addLog("system", "遭遇了「" + monster.name + "」，战斗开始。");
+            },
+            async doAttack() {
+                await this.playerTurn(this.randInt(this.playerAtk[0], this.playerAtk[1]), false);
+            },
+            async doSkill() {
+                const damage = Math.round(this.randInt(this.playerAtk[0], this.playerAtk[1]) * 1.8);
+                await this.playerTurn(damage, true);
+                this.skillCooldown = 3;
+            },
+            doFlee() {
+                if (this.isBusy || this.battleOver) return;
+                this.isBusy = true;
+                if (Math.random() < 0.5) {
+                    this.addLog("system", "逃跑成功，正在重新匹配下一场。");
+                    this.battleOver = true;
+                    setTimeout(() => this.initBattle(), 1200);
+                } else {
+                    this.addLog("system", "逃跑失败，怪物立刻反击。");
+                    this.monsterTurn();
+                }
+            },
+            async playerTurn(damage, isSkill) {
+                if (this.isBusy || this.battleOver) return;
+                this.isBusy = true;
+                this.round++;
+                if (this.skillCooldown > 0) this.skillCooldown--;
+
+                this.playerAttacking = true;
+                await this.sleep(380);
+                this.playerAttacking = false;
+
+                let finalDamage = damage;
+                let prefix = isSkill ? "技能命中。" : "";
+                if (Math.random() < 0.1) {
+                    finalDamage = Math.round(damage * 1.5);
+                    prefix += "暴击！";
+                }
+
+                this.monsterHp = Math.max(0, this.monsterHp - finalDamage);
+                this.addLog("player-hit", prefix + "你对「" + this.monster.name + "」造成 " + finalDamage + " 点伤害。");
+
+                if (this.monsterHp <= 0) {
+                    await this.sleep(300);
+                    this.onVictory();
+                    return;
+                }
+
+                await this.sleep(500);
+                await this.monsterTurn();
+            },
+            async monsterTurn() {
+                this.monsterAttacking = true;
+                await this.sleep(380);
+                this.monsterAttacking = false;
+
+                const damage = this.randInt(this.monster.atk[0], this.monster.atk[1]);
+                this.playerHp = Math.max(0, this.playerHp - damage);
+                this.addLog("monster-hit", "「" + this.monster.name + "」对你造成 " + damage + " 点伤害。");
+
+                if (this.playerHp <= 0) {
+                    await this.sleep(300);
+                    this.onDefeat();
+                    return;
+                }
+
+                this.isBusy = false;
+            },
+            async onVictory() {
+                this.battleOver = true;
+                const gold = this.randInt(this.monster.gold[0], this.monster.gold[1]);
+                this.goldReward = gold;
+                this.addLog("drop", "击败了「" + this.monster.name + "」。");
+                this.addLog("drop", "获得 " + gold + " 金币。");
+
+                if (Math.random() < this.monster.dropRate) {
+                    const loot = this.randomItem();
+                    this.loots.push(loot);
+                    this.addLog("drop", "获得装备：「" + loot.rarity + "」" + loot.itemName + "。");
+                }
+
+                await this.saveResult(gold, this.loots);
+
+                this.gold += gold;
+                localStorage.setItem("gold", this.gold);
+
+                await this.sleep(700);
+                this.modal = {
+                    show: true,
+                    type: "win",
+                    icon: "🏆",
+                    title: "胜利",
+                    sub: "获得 " + gold + " 金币" + (this.loots.length > 0 ? "，并掉落 " + this.loots.length + " 件装备。" : "。")
+                };
+            },
+            onDefeat() {
+                this.battleOver = true;
+                this.addLog("system", "你被击败了，调整状态后再战。");
+                setTimeout(() => {
+                    this.modal = {
+                        show: true,
+                        type: "lose",
+                        icon: "💥",
+                        title: "战败",
+                        sub: "这场没有获得奖励，再战一局找回节奏。"
+                    };
+                }, 700);
+            },
+            async saveResult(gold, loots) {
+                try {
+                    const params = new URLSearchParams();
+                    params.append("playerId", this.playerId);
+                    params.append("gold", gold);
+                    params.append("monsterName", this.monster.name);
+                    params.append("loots", JSON.stringify(loots));
+                    await axios.post(window.GE_API("/battle/result"), params);
+                } catch (error) {
+                    this.addLog("system", "战斗结果暂时未保存，请检查服务器连接。");
+                }
+            },
+            nextBattle() {
+                this.initBattle();
+            },
+            goMarket() {
+                window.GEPageTransition ? window.GEPageTransition.go("market.html") : location.href = "market.html";
+            },
+            logout() {
+                axios.post(window.GE_API("/logout")).finally(() => {
+                    localStorage.clear();
+                    window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+                });
+            },
+            addLog(type, text) {
+                this.battleLogs.unshift({ type: type, round: this.round, text: text });
+                this.$nextTick(() => {
+                    const log = this.$refs.battleLog;
+                    if (log) log.scrollTop = 0;
+                });
+            },
+            randomItem() {
+                const roll = Math.random() * 100;
+                if (roll < 55) return ITEMS[Math.floor(Math.random() * 3)];
+                if (roll < 80) return ITEMS[3 + Math.floor(Math.random() * 2)];
+                if (roll < 95) return ITEMS[5 + Math.floor(Math.random() * 2)];
+                return ITEMS[7 + Math.floor(Math.random() * 3)];
+            },
+            randInt(min, max) {
+                return min + Math.floor(Math.random() * (max - min + 1));
+            },
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            },
+            formatNumber(value) {
+                return this.numberFormatter.format(Number(value) || 0);
+            },
+            isCriticalLog(log) {
+                const text = String(log && log.text || "");
+                return text.indexOf("暴击") !== -1 || text.indexOf("击败") !== -1 || text.indexOf("获得装备") !== -1;
+            }
+        }
+    });
+</script>
+</body>
+</html>

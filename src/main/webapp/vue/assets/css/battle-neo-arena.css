@@ -1,0 +1,473 @@
+body.battle-page {
+    --battle-panel-bg:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.014) 46%, rgba(105, 232, 255, 0.018)),
+        rgba(8, 10, 20, 0.82);
+    --battle-panel-border: rgba(130, 229, 255, 0.22);
+    --battle-font-digital: "Oswald", "Orbitron", "Rajdhani", "Consolas", "Microsoft YaHei", monospace;
+}
+
+body.battle-page .ge-force-visual-root {
+    z-index: 1;
+    opacity: 0.9;
+}
+
+body.battle-page .ge-force-visual-root canvas,
+.ge-force-showcase-ready.battle-page .ge-force-visual-root canvas {
+    opacity: 0.9 !important;
+    filter: saturate(1.9) contrast(1.22) brightness(0.96) !important;
+}
+
+body.battle-page .app-shell {
+    position: relative;
+    z-index: 10;
+}
+
+body.battle-page .topbar,
+body.battle-page .hero-panel,
+body.battle-page .arena-grid,
+body.battle-page .panel,
+body.battle-page .loot-card,
+body.battle-page .modal-box,
+.ge-force-showcase-ready.battle-page .topbar,
+.ge-force-showcase-ready.battle-page .hero-panel,
+.ge-force-showcase-ready.battle-page .arena-grid,
+.ge-force-showcase-ready.battle-page .panel,
+.ge-force-showcase-ready.battle-page .loot-card,
+.ge-force-showcase-ready.battle-page .modal-box {
+    border-color: var(--battle-panel-border) !important;
+    background:
+        linear-gradient(90deg, rgba(105, 232, 255, 0.7) 0 14px, transparent 14px) left top / 44px 2px no-repeat,
+        linear-gradient(rgba(105, 232, 255, 0.7) 0 14px, transparent 14px) left top / 2px 44px no-repeat,
+        linear-gradient(270deg, rgba(255, 92, 168, 0.54) 0 14px, transparent 14px) right bottom / 44px 2px no-repeat,
+        linear-gradient(0deg, rgba(255, 92, 168, 0.54) 0 14px, transparent 14px) right bottom / 2px 44px no-repeat,
+        var(--battle-panel-bg) !important;
+    box-shadow:
+        0 28px 82px rgba(0, 0, 0, 0.46),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.08) !important;
+    backdrop-filter: blur(25px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(150%) !important;
+    border-radius: 6px;
+}
+
+body.battle-page .topbar {
+    min-height: 62px;
+    padding: 12px 16px;
+}
+
+body.battle-page .brand h1 {
+    font-size: 17px;
+}
+
+body.battle-page .brand p {
+    font-size: 11px;
+}
+
+body.battle-page .logo-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+}
+
+body.battle-page .hero-panel {
+    padding: 18px 22px;
+}
+
+body.battle-page .hero-panel::before {
+    opacity: 0 !important;
+}
+
+body.battle-page .hero-panel h2 {
+    margin: 14px 0 10px;
+    font-family: var(--battle-font-digital);
+    font-size: clamp(28px, 3.6vw, 46px);
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 0 18px rgba(255, 209, 102, 0.2);
+}
+
+body.battle-page .hero-panel p {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+body.battle-page .arena-grid {
+    grid-template-columns: minmax(0, 1fr) 138px minmax(0, 1fr);
+    position: relative;
+    gap: 0;
+    padding: 18px;
+    border: 1px solid var(--battle-panel-border);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+body.battle-page .arena-grid::before,
+.ge-force-showcase-ready.battle-page .arena-grid::before {
+    content: "";
+    position: absolute;
+    inset: -18% -10%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 42% 50%, rgba(105, 232, 255, 0.22), transparent 30%),
+        radial-gradient(circle at 58% 50%, rgba(255, 92, 168, 0.2), transparent 30%),
+        linear-gradient(90deg, rgba(105, 232, 255, 0.1), transparent 43%, transparent 57%, rgba(255, 92, 168, 0.1));
+    filter: blur(6px);
+    opacity: 0.94;
+}
+
+body.battle-page .arena-grid::after,
+.ge-force-showcase-ready.battle-page .arena-grid::after {
+    content: "";
+    position: absolute;
+    inset: 16px;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, transparent 0 33%, rgba(105, 232, 255, 0.09) 45%, rgba(255, 92, 168, 0.1) 55%, transparent 67%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 42px);
+    opacity: 0.38;
+    mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+}
+
+body.battle-page .arena-grid > *,
+.ge-force-showcase-ready.battle-page .arena-grid > * {
+    position: relative;
+    z-index: 1;
+}
+
+body.battle-page .arena-card,
+body.battle-page .vs-panel,
+.ge-force-showcase-ready.battle-page .arena-card,
+.ge-force-showcase-ready.battle-page .vs-panel {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.battle-page .vs-panel {
+    position: relative;
+    min-height: 320px;
+    overflow: hidden;
+}
+
+body.battle-page .vs-panel::before {
+    display: none !important;
+}
+
+body.battle-page .arena-card {
+    min-height: 336px;
+    padding: 24px;
+}
+
+body.battle-page .arena-card::after {
+    height: 1px;
+    opacity: 0.72;
+}
+
+body.battle-page .arena-card.player {
+    background:
+        radial-gradient(circle at 30% 42%, rgba(105, 232, 255, 0.11), transparent 42%),
+        linear-gradient(90deg, rgba(105, 232, 255, 0.045), transparent 72%) !important;
+}
+
+body.battle-page .arena-card.monster {
+    background:
+        radial-gradient(circle at 70% 42%, rgba(255, 117, 70, 0.14), transparent 42%),
+        linear-gradient(270deg, rgba(255, 92, 168, 0.052), transparent 72%) !important;
+}
+
+body.battle-page .arena-card.monster .card-kicker,
+body.battle-page .arena-card.monster .hp-label {
+    color: rgba(255, 166, 124, 0.88);
+}
+
+body.battle-page .arena-card.monster .char-name,
+body.battle-page .arena-card.monster .combat-stats b {
+    color: rgba(255, 173, 116, 0.96);
+    text-shadow: 0 0 14px rgba(255, 92, 168, 0.28);
+}
+
+body.battle-page .arena-card.monster .combat-stats div {
+    border-color: rgba(255, 117, 70, 0.16);
+    background: rgba(255, 92, 168, 0.045);
+}
+
+body.battle-page .arena-card.player .combat-stats b {
+    text-shadow: 0 0 14px rgba(105, 232, 255, 0.26);
+}
+
+body.battle-page .card-kicker {
+    font-family: var(--battle-font-digital);
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+body.battle-page .char-name {
+    font-family: var(--battle-font-digital);
+    font-weight: 900;
+}
+
+body.battle-page .avatar {
+    min-height: 142px;
+    font-size: 108px;
+    line-height: 1;
+    will-change: transform, filter;
+}
+
+body.battle-page .arena-card.player .avatar {
+    animation: playerBobbing 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 22px rgba(105, 232, 255, 0.22));
+}
+
+body.battle-page .arena-card.monster .avatar {
+    animation: monsterBreathing 2.45s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(255, 92, 168, 0.24));
+}
+
+body.battle-page .arena-card .avatar.attacking {
+    animation: playerAttack 420ms ease;
+}
+
+body.battle-page .arena-card.monster .avatar.attacking {
+    animation: monsterAttack 420ms ease;
+}
+
+body.battle-page .vs-core {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 112px;
+    height: 112px;
+    border: 1px solid rgba(105, 232, 255, 0.22);
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255, 92, 168, 0.18), transparent 48%),
+        rgba(2, 7, 16, 0.46);
+    box-shadow:
+        0 0 36px rgba(105, 232, 255, 0.16),
+        inset 0 0 26px rgba(105, 232, 255, 0.12);
+}
+
+body.battle-page .vs-core::before,
+body.battle-page .vs-core::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+body.battle-page .vs-core::before {
+    inset: -14px;
+    border: 1px solid rgba(105, 232, 255, 0.18);
+    animation: battleScanSpin 7s linear infinite;
+}
+
+body.battle-page .vs-core::after {
+    inset: 16px;
+    border: 1px dashed rgba(255, 92, 168, 0.28);
+}
+
+body.battle-page .vs-panel b {
+    color: #ff5ca8;
+    font-family: var(--battle-font-digital);
+    font-size: 34px;
+    text-shadow: 0 0 18px rgba(255, 92, 168, 0.62);
+}
+
+body.battle-page .vs-panel span,
+body.battle-page .vs-panel i {
+    font-family: var(--battle-font-digital);
+    font-size: 10px;
+    font-style: normal;
+    color: rgba(159, 177, 200, 0.76);
+}
+
+body.battle-page .hp-bar {
+    height: 14px;
+    border-color: rgba(255, 255, 255, 0.14);
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01)),
+        rgba(0, 0, 0, 0.28);
+}
+
+body.battle-page .hp-fill {
+    position: relative;
+    box-shadow: 0 0 16px rgba(105, 232, 255, 0.28);
+}
+
+body.battle-page .hp-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 7px, rgba(255, 255, 255, 0.22) 7px 8px);
+    opacity: 0.22;
+    animation: hpDissolve 1.2s linear infinite;
+}
+
+body.battle-page .monster .hp-fill {
+    box-shadow: 0 0 16px rgba(255, 92, 168, 0.28);
+}
+
+body.battle-page .combat-control {
+    padding: 18px;
+    gap: 14px;
+}
+
+body.battle-page .combat-control,
+.ge-force-showcase-ready.battle-page .combat-control {
+    margin-top: 10px;
+    padding: 10px 18px 2px;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.battle-page .combat-btn {
+    min-height: 46px;
+    min-width: 132px;
+    padding: 11px 18px;
+    font-weight: 900;
+    clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+
+body.battle-page .combat-btn.attack {
+    border-color: rgba(105, 232, 255, 0.36) !important;
+    background: rgba(3, 9, 20, 0.44) !important;
+    color: rgba(213, 248, 255, 0.94) !important;
+}
+
+body.battle-page .combat-btn.skill {
+    border-color: rgba(150, 233, 255, 0.34) !important;
+    background:
+        linear-gradient(92deg, rgba(115, 255, 202, 0.92), rgba(105, 232, 255, 0.92) 52%, rgba(255, 92, 168, 0.86)),
+        rgba(4, 10, 20, 0.42) !important;
+    color: #06111b !important;
+    box-shadow:
+        0 0 22px rgba(105, 232, 255, 0.18),
+        0 18px 42px rgba(105, 232, 255, 0.24),
+        0 0 34px rgba(255, 92, 168, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+}
+
+body.battle-page .battle-log {
+    height: 340px;
+    padding-right: 4px;
+}
+
+body.battle-page .log-item {
+    position: relative;
+    grid-template-columns: 12px 52px minmax(0, 1fr);
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 9px 10px;
+    border: 1px solid rgba(105, 232, 255, 0.08);
+    background: rgba(255, 255, 255, 0.032);
+}
+
+body.battle-page .log-item::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan);
+    animation: battleLogPulse 1.7s ease-in-out infinite;
+}
+
+body.battle-page .log-item.drop::before,
+body.battle-page .log-item.critical::before {
+    background: var(--amber);
+    box-shadow: 0 0 14px rgba(255, 209, 102, 0.7);
+}
+
+body.battle-page .log-round {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    border: 1px solid rgba(105, 232, 255, 0.14);
+    background: rgba(2, 8, 18, 0.56);
+    font-family: var(--battle-font-digital);
+    font-size: 10px;
+}
+
+body.battle-page .log-item.critical .log-text,
+body.battle-page .drop .log-text {
+    color: var(--amber);
+    text-shadow: 0 0 14px rgba(255, 209, 102, 0.28);
+}
+
+body.battle-page .loot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.battle-page .loot-card {
+    min-height: 116px;
+    border-style: solid;
+}
+
+body.battle-page .loot-card.placeholder {
+    display: grid;
+    place-items: center;
+    border-style: dashed !important;
+    opacity: 0.7;
+}
+
+body.battle-page .loot-card.placeholder .loot-icon {
+    color: rgba(159, 177, 200, 0.45);
+    text-shadow: 0 0 18px rgba(105, 232, 255, 0.14);
+}
+
+@keyframes battleScanSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes hpDissolve {
+    to { transform: translateX(12px); }
+}
+
+@keyframes battleLogPulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.86); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes playerBobbing {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-8px) scale(1.035); }
+}
+
+@keyframes monsterBreathing {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-3px) scale(1.08); }
+}
+
+@media (max-width: 980px) {
+    body.battle-page .arena-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body.battle-page .vs-panel {
+        min-height: 130px;
+    }
+}
+
+@media (max-width: 620px) {
+    body.battle-page .loot-grid {
+        grid-template-columns: 1fr;
+    }
+
+    body.battle-page .log-item {
+        grid-template-columns: 10px minmax(0, 1fr);
+    }
+
+    body.battle-page .log-round,
+    body.battle-page .log-text {
+        grid-column: 2;
+    }
+}

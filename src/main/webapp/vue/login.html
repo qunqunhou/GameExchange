@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="assets/js/app-config.js?v=20260723-0001"></script>
+    <title>登录账号 | Game Exchange</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            --bg: #070a10;
+            --panel: rgba(10, 17, 28, 0.82);
+            --panel-strong: rgba(12, 22, 36, 0.95);
+            --line: rgba(116, 226, 255, 0.28);
+            --cyan: #6ee7ff;
+            --mint: #6dffb8;
+            --amber: #ffd166;
+            --rose: #ff4d8d;
+            --text: #eef7ff;
+            --muted: #9fb1c8;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+        }
+
+        * { box-sizing: border-box; }
+        html { min-height: 100%; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(109, 255, 184, 0.09), transparent 28%),
+                linear-gradient(225deg, rgba(255, 209, 102, 0.08), transparent 31%),
+                linear-gradient(145deg, #05070c 0%, #0a1220 48%, #101524 100%);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(110, 231, 255, 0.22), transparent 18rem),
+                linear-gradient(rgba(110, 231, 255, 0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 231, 255, 0.045) 1px, transparent 1px);
+            background-size: auto, 42px 42px, 42px 42px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.18));
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255,255,255,0.018) 0,
+                rgba(255,255,255,0.018) 1px,
+                transparent 1px,
+                transparent 5px
+            );
+            pointer-events: none;
+        }
+
+        a { color: inherit; }
+        [v-cloak] { display: none; }
+        [hidden],
+        .brand-panel[hidden] {
+            display: none !important;
+        }
+
+        .auth-shell {
+            width: min(1180px, calc(100% - 32px));
+            min-height: 100vh;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.72fr);
+            align-items: center;
+            gap: 28px;
+            padding: 28px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-panel,
+        .auth-panel {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(14px);
+        }
+
+        .brand-panel {
+            min-height: 680px;
+            padding: 28px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-panel::before,
+        .auth-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(120deg, rgba(110, 231, 255, 0.14), transparent 36%),
+                linear-gradient(0deg, rgba(109, 255, 184, 0.08), transparent 50%);
+            pointer-events: none;
+        }
+
+        .data-stream {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .data-stream span {
+            position: absolute;
+            top: -36px;
+            width: 1px;
+            height: 92px;
+            background: linear-gradient(180deg, transparent, rgba(110, 231, 255, 0.72), transparent);
+            animation: streamFall 5s linear infinite;
+            opacity: 0.58;
+        }
+
+        .data-stream span:nth-child(1) { left: 9%; animation-delay: -1.4s; }
+        .data-stream span:nth-child(2) { left: 21%; animation-delay: -3.1s; height: 130px; }
+        .data-stream span:nth-child(3) { left: 37%; animation-delay: -0.7s; }
+        .data-stream span:nth-child(4) { left: 53%; animation-delay: -4.2s; height: 118px; }
+        .data-stream span:nth-child(5) { left: 72%; animation-delay: -2.2s; }
+        .data-stream span:nth-child(6) { left: 89%; animation-delay: -5.3s; height: 150px; }
+
+        .brand-panel > *,
+        .auth-panel > * { position: relative; z-index: 1; }
+
+        .brand-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo-lockup {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .logo-mark {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            color: #071019;
+            font-weight: 900;
+            background: conic-gradient(from 90deg, var(--mint), var(--cyan), var(--amber), var(--mint));
+            clip-path: polygon(50% 0, 95% 24%, 95% 76%, 50% 100%, 5% 76%, 5% 24%);
+            box-shadow: 0 0 28px rgba(110, 231, 255, 0.34);
+            animation: breathe 2.8s ease-in-out infinite;
+            flex: 0 0 auto;
+        }
+
+        .logo-text strong {
+            display: block;
+            font-size: 18px;
+        }
+
+        .logo-text span {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .server-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 34px;
+            padding: 7px 10px;
+            border: 1px solid rgba(109, 255, 184, 0.28);
+            background: rgba(109, 255, 184, 0.08);
+            color: var(--mint);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .server-pill::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--mint);
+            box-shadow: 0 0 16px var(--mint);
+            animation: breathe 1.8s ease-in-out infinite;
+        }
+
+        .hero-copy {
+            align-self: center;
+        }
+
+        .brand-title {
+            margin: 0 0 16px;
+            font-size: clamp(46px, 7vw, 86px);
+            line-height: 0.94;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .brand-title span {
+            display: block;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(238, 247, 255, 0.82);
+            text-shadow: 0 0 28px rgba(110, 231, 255, 0.32);
+        }
+
+        .brand-copy {
+            max-width: 620px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+        .live-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .live-card {
+            min-height: 92px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 14px;
+            overflow: hidden;
+        }
+
+        .live-card b {
+            display: block;
+            color: var(--cyan);
+            font-size: clamp(19px, 2.1vw, 26px);
+            margin-bottom: 7px;
+            transition: transform 220ms ease, color 220ms ease;
+        }
+
+        .live-card.bump b {
+            color: var(--mint);
+            transform: translateY(-2px);
+        }
+
+        .live-card span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .market-layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .terminal-board,
+        .trend-board,
+        .rank-board {
+            border: 1px solid rgba(110, 231, 255, 0.22);
+            background: rgba(5, 9, 17, 0.74);
+            min-width: 0;
+        }
+
+        .terminal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 13px;
+            border-bottom: 1px solid rgba(110, 231, 255, 0.16);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .terminal-head strong {
+            color: #dff8ff;
+            font-size: 13px;
+        }
+
+        .pulse-text {
+            color: var(--mint);
+            animation: breathe 1.7s ease-in-out infinite;
+        }
+
+        .market-row {
+            display: grid;
+            grid-template-columns: minmax(92px, 1fr) auto auto;
+            gap: 12px;
+            align-items: center;
+            min-height: 48px;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(110, 231, 255, 0.1);
+            font-size: 14px;
+            transition: background 200ms ease, box-shadow 200ms ease;
+        }
+
+        .market-row:last-child { border-bottom: 0; }
+        .market-row.flash { background: rgba(109, 255, 184, 0.1); box-shadow: inset 3px 0 0 var(--mint); }
+        .market-row strong { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .market-row span { color: var(--muted); white-space: nowrap; }
+        .market-row .up { color: var(--mint); }
+        .market-row .hot { color: var(--amber); }
+        .market-row .down { color: var(--rose); }
+
+        .trend-board {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+        }
+
+        .trend-chart {
+            width: 100%;
+            min-height: 156px;
+            padding: 8px 8px 0;
+        }
+
+        .trend-chart svg {
+            display: block;
+            width: 100%;
+            height: 150px;
+        }
+
+        .trend-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 0 12px 12px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .rank-board {
+            margin-top: 12px;
+        }
+
+        .rank-row {
+            display: grid;
+            grid-template-columns: 28px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            min-height: 42px;
+            padding: 10px 13px;
+            border-bottom: 1px solid rgba(110, 231, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .rank-row:last-child { border-bottom: 0; }
+        .rank-row i {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 209, 102, 0.38);
+            color: var(--amber);
+            font-style: normal;
+            font-weight: 800;
+        }
+
+        .rank-row strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .rank-row span {
+            color: var(--mint);
+            white-space: nowrap;
+        }
+
+        .auth-panel {
+            padding: 34px;
+            background: var(--panel-strong);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-top {
+            margin-bottom: 28px;
+        }
+
+        .panel-top p {
+            margin: 0 0 8px;
+            color: var(--mint);
+            font-size: 13px;
+            letter-spacing: 0;
+        }
+
+        .panel-top h1 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.15;
+            letter-spacing: 0;
+        }
+
+        .message {
+            padding: 12px 14px;
+            border: 1px solid rgba(255, 77, 141, 0.38);
+            background: rgba(255, 77, 141, 0.11);
+            color: #ffc2d8;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d9ecff;
+            font-size: 14px;
+        }
+
+        .input-wrap { position: relative; }
+
+        .input-wrap input {
+            width: 100%;
+            min-height: 48px;
+            padding: 13px 14px;
+            border: 1px solid rgba(159, 177, 200, 0.32);
+            background: rgba(5, 9, 17, 0.68);
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .input-wrap input::placeholder { color: rgba(159, 177, 200, 0.58); }
+
+        .input-wrap input:focus {
+            border-color: var(--cyan);
+            background: rgba(8, 16, 29, 0.9);
+            box-shadow: 0 0 0 4px rgba(110, 231, 255, 0.13);
+        }
+
+        .btn-primary {
+            width: 100%;
+            min-height: 52px;
+            border: 0;
+            color: #071019;
+            background: linear-gradient(90deg, var(--mint), var(--cyan), var(--amber), var(--mint));
+            background-size: 260% 100%;
+            font-weight: 900;
+            font-size: 15px;
+            letter-spacing: 0;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+            animation: buttonFlow 4s linear infinite;
+        }
+
+        .btn-primary::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.52), transparent);
+            transition: transform 520ms ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 0 1px rgba(110, 231, 255, 0.28), 0 18px 36px rgba(110, 231, 255, 0.24);
+        }
+
+        .btn-primary:hover::before { transform: translateX(100%); }
+
+        .btn-primary:focus-visible,
+        .link-row a:focus-visible {
+            outline: 3px solid rgba(255, 209, 102, 0.75);
+            outline-offset: 3px;
+        }
+
+        .btn-primary:disabled {
+            cursor: not-allowed;
+            filter: grayscale(0.6) brightness(0.8);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-label {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(7, 16, 25, 0.28);
+            border-top-color: #071019;
+            border-radius: 50%;
+            animation: spin 680ms linear infinite;
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            background: rgba(255, 255, 255, 0.54);
+            animation: ripple 620ms ease-out;
+            pointer-events: none;
+        }
+
+        .link-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 22px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .link-row a {
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+
+        .link-row a:hover {
+            color: var(--cyan);
+            border-bottom-color: var(--cyan);
+        }
+
+        @keyframes streamFall {
+            from { transform: translateY(-12%); }
+            to { transform: translateY(760px); }
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.72; filter: drop-shadow(0 0 6px rgba(109,255,184,0.35)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(109,255,184,0.62)); }
+        }
+
+        @keyframes buttonFlow {
+            from { background-position: 0% 50%; }
+            to { background-position: 260% 50%; }
+        }
+
+        @keyframes ripple {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 980px) {
+            body { overflow: auto; }
+            .auth-shell {
+                grid-template-columns: 1fr;
+                width: min(620px, calc(100% - 28px));
+            }
+            .brand-panel {
+                min-height: auto;
+                padding: 24px;
+            }
+            .brand-title { font-size: clamp(38px, 12vw, 64px); }
+            .market-layout { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 620px) {
+            .auth-shell { width: calc(100% - 20px); padding: 10px 0; }
+            .auth-panel, .brand-panel { padding: 22px; }
+            .brand-top { align-items: flex-start; flex-direction: column; }
+            .live-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .market-row { grid-template-columns: 1fr; gap: 5px; }
+            .link-row { flex-direction: column; }
+        }
+
+        @media (max-width: 420px) {
+            .live-grid { grid-template-columns: 1fr; }
+            .terminal-head { align-items: flex-start; flex-direction: column; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/css/neo-ui.css">
+    <link rel="stylesheet" href="assets/css/neo3d-shared.css?v=20260628-0042">
+    <link rel="stylesheet" href="assets/css/auth-neo-shared.css">
+    <link rel="stylesheet" href="assets/css/login-neo-scene.css?v=20260628-0038">
+    <script>window.GE_NEO_VISUALS_ENABLED = true;</script>
+    <script defer src="assets/js/neo3d/force-showcase.js?v=20260628-0224"></script>
+</head>
+<body class="ge-direct-render">
+<div class="login-ambient ambient-core" aria-hidden="true"></div>
+<div class="login-ambient ambient-corner" aria-hidden="true"></div>
+
+<header class="login-brand-identity" aria-label="Game Exchange Terminal">
+    <div class="brand-sigil">GE</div>
+    <div>
+        <strong>GAME EXCHANGE TERMINAL</strong>
+        <span>SYSTEM STATUS: ONLINE // VER 2.0.4</span>
+    </div>
+</header>
+
+<div class="hud-radar" aria-hidden="true">
+    <span></span><span></span><span></span>
+</div>
+
+<div class="hud-crosshair" aria-hidden="true">
+    <span class="cross-line horizontal"></span>
+    <span class="cross-line vertical"></span>
+    <span class="hex-feed">0x7F91 // 0x8A2C // LINK 94MS</span>
+</div>
+
+<div class="hud-system-copy" aria-hidden="true">
+    <span>INITIALIZING SECURITY PROTOCOL...</span>
+    <span>DATA LINK: STABLE [94 MS]</span>
+    <span>CORE TEMP: OPTIMAL</span>
+</div>
+<main id="app" class="auth-shell" @mousemove="trackMouse">
+    <section class="brand-panel" hidden aria-hidden="true" style="display: none !important;">
+        <div class="data-stream" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="brand-top">
+            <div class="logo-lockup">
+                <div class="logo-mark" aria-hidden="true">GE</div>
+                <div class="logo-text">
+                    <strong>Game Exchange</strong>
+                    <span>装备资产交易所</span>
+                </div>
+            </div>
+            <div class="server-pill">服务器 {{ serverLoad }}% 在线</div>
+        </div>
+
+        <div class="hero-copy">
+            <h2 class="brand-title">Game <span>Exchange</span></h2>
+            <p class="brand-copy">
+                玩家装备、金币材料与稀有掉落的实时交易终端。登录后进入行情、挂单、背包资产与交易记录，让每一次出价都像游戏内拍卖行一样清晰。
+            </p>
+
+            <div class="live-grid" aria-label="平台实时数据">
+                <div class="live-card" :class="{ bump: bumpKey === 'online' }">
+                    <b>{{ onlinePlayers.toLocaleString() }}</b><span>实时在线玩家</span>
+                </div>
+                <div class="live-card" :class="{ bump: bumpKey === 'volume' }">
+                    <b>{{ tradeVolumeLabel }}</b><span>今日交易额</span>
+                </div>
+                <div class="live-card" :class="{ bump: bumpKey === 'orders' }">
+                    <b>{{ liveOrders }}</b><span>活跃挂单</span>
+                </div>
+                <div class="live-card" :class="{ bump: bumpKey === 'latency' }">
+                    <b>{{ latency }}ms</b><span>撮合延迟</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="market-layout">
+                <div class="terminal-board" aria-label="实时行情">
+                    <div class="terminal-head">
+                        <strong>MARKET FEED</strong>
+                        <span class="pulse-text">SECURE CHANNEL ONLINE</span>
+                    </div>
+                    <div class="market-row" v-for="item in marketRows" :key="item.name" :class="{ flash: item.flash }">
+                        <strong>{{ item.name }}</strong>
+                        <span>{{ item.meta }}</span>
+                        <span :class="item.state">{{ item.change }}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="trend-board" aria-label="成交趋势">
+                        <div class="terminal-head">
+                            <strong>成交趋势</strong>
+                            <span class="pulse-text">LIVE</span>
+                        </div>
+                        <div class="trend-chart" aria-hidden="true">
+                            <svg viewBox="0 0 240 150" preserveAspectRatio="none">
+                                <path d="M0 120 L240 120 M0 82 L240 82 M0 44 L240 44" stroke="rgba(159,177,200,0.16)" stroke-width="1" />
+                                <polyline :points="trendPoints" fill="none" stroke="#6ee7ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                                <polyline :points="trendPoints" fill="none" stroke="rgba(109,255,184,0.42)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="trend-meta">
+                            <span>峰值 {{ peakTrade }}</span>
+                            <span>涨幅 +{{ trendBoost }}%</span>
+                        </div>
+                    </div>
+
+                    <div class="rank-board" aria-label="玩家财富榜">
+                        <div class="terminal-head">
+                            <strong>玩家财富榜</strong>
+                            <span>TOP 3</span>
+                        </div>
+                        <div class="rank-row" v-for="(player, index) in wealthRank" :key="player.name">
+                            <i>{{ index + 1 }}</i>
+                            <strong>{{ player.name }}</strong>
+                            <span>{{ player.gold }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-panel" aria-label="登录表单">
+        <div class="panel-top">
+            <p>PLAYER ACCESS</p>
+            <h1>登录交易终端</h1>
+        </div>
+
+        <div class="message" v-if="errorMsg" v-cloak role="alert">{{ errorMsg }}</div>
+
+        <div class="form-group">
+            <label for="username">PLAYER ACCOUNT</label>
+            <div class="input-wrap">
+                <span class="input-icon user-icon" aria-hidden="true"></span>
+                <input id="username" type="text" v-model.trim="username"
+                       placeholder="输入用户名" autocomplete="username"
+                       required @keyup.enter="login">
+                <span class="scan-hint" aria-hidden="true">SCANNING...</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="password">ACCESS KEY</label>
+            <div class="input-wrap">
+                <span class="input-icon lock-icon" aria-hidden="true"></span>
+                <input id="password" type="password" v-model="password"
+                       placeholder="输入密码" autocomplete="current-password"
+                       required @keyup.enter="login">
+                <span class="scan-hint" aria-hidden="true">SCANNING...</span>
+            </div>
+        </div>
+
+        <div class="terminal-options">
+            <label class="remember-terminal">
+                <input type="checkbox" v-model="rememberTerminal">
+                <span>Remember Terminal</span>
+            </label>
+            <button class="key-reset" type="button" @click="resetKey">Reset Key</button>
+        </div>
+
+        <button class="btn-primary" @click="login" :disabled="loading" :class="{ loading: loading }">
+            <span class="btn-label">
+                <i class="spinner" v-if="loading" aria-hidden="true"></i>
+                {{ loading ? "正在接入交易终端..." : "进入 Game Exchange" }}
+            </span>
+        </button>
+
+        <div class="fast-access" aria-label="Fast access providers">
+            <span>FAST ACCESS //</span>
+            <button class="provider steam" type="button" @click="fastAccess('Steam')" aria-label="Steam access">S</button>
+            <button class="provider discord" type="button" @click="fastAccess('Discord')" aria-label="Discord access">D</button>
+            <button class="provider epic" type="button" @click="fastAccess('Epic')" aria-label="Epic access">E</button>
+        </div>
+
+        <div class="link-row">
+            <a href="register.html">创建新玩家账号</a>
+            <a href="dashboard.html">查看数据大屏</a>
+        </div>
+    </section>
+</main>
+
+<footer class="login-legal">
+    COPYRIGHT © 2026 GAME EXCHANGE. ALL RIGHTS RESERVED. SECURE ENCRYPTION ENABLED.
+</footer>
+
+<script>
+    window.GE_CURRENT_VM = new Vue({
+        el: "#app",
+        data: {
+            username: "",
+            password: "",
+            rememberTerminal: false,
+            errorMsg: "",
+            loading: false,
+            onlinePlayers: 4826,
+            tradeVolume: 128640,
+            liveOrders: 376,
+            latency: 42,
+            serverLoad: 91,
+            bumpKey: "",
+            trend: [36, 42, 40, 56, 62, 58, 74, 81, 78, 96, 104, 116],
+            trendBoost: "12.8",
+            marketRows: [
+                { name: "星辉长剑", meta: "24H成交 186", change: "+12.8%", state: "up", flash: false },
+                { name: "龙鳞护甲", meta: "库存 42", change: "HOT", state: "hot", flash: false },
+                { name: "能量核心", meta: "求购 73", change: "+6.4%", state: "up", flash: false },
+                { name: "暗影戒指", meta: "竞价 31", change: "-1.9%", state: "down", flash: false }
+            ],
+            wealthRank: [
+                { name: "NightBlade", gold: "982K" },
+                { name: "星港商人", gold: "744K" },
+                { name: "ManaForge", gold: "698K" }
+            ],
+            timer: null
+        },
+        computed: {
+            tradeVolumeLabel() {
+                return Math.round(this.tradeVolume / 1000) + "K";
+            },
+            peakTrade() {
+                return Math.max.apply(null, this.trend);
+            },
+            trendPoints() {
+                const max = Math.max.apply(null, this.trend);
+                const min = Math.min.apply(null, this.trend);
+                return this.trend.map((value, index) => {
+                    const x = index * (240 / (this.trend.length - 1));
+                    const y = 128 - ((value - min) / Math.max(max - min, 1)) * 100;
+                    return x.toFixed(1) + "," + y.toFixed(1);
+                }).join(" ");
+            }
+        },
+        mounted() {
+            this.startMarketPulse();
+
+            const playerId = localStorage.getItem("playerId");
+            if (playerId) {
+                axios.get(window.GE_API("/market/list"))
+                    .then(() => {
+                        window.GEPageTransition ? window.GEPageTransition.go("dashboard.html") : location.href = "dashboard.html";
+                    })
+                    .catch(() => {
+                        localStorage.clear();
+                    });
+            }
+        },
+        beforeDestroy() {
+            clearInterval(this.timer);
+        },
+        methods: {
+            trackMouse(event) {
+                document.documentElement.style.setProperty("--mouse-x", event.clientX + "px");
+                document.documentElement.style.setProperty("--mouse-y", event.clientY + "px");
+            },
+            resetKey() {
+                this.errorMsg = "密钥重置通道暂未开放，请联系系统管理员。";
+            },
+            fastAccess(provider) {
+                this.errorMsg = provider + " 快捷接入正在维护中，请使用玩家账号登录。";
+            },
+            startMarketPulse() {
+                this.timer = setInterval(() => {
+                    const keys = ["online", "volume", "orders", "latency"];
+                    this.bumpKey = keys[Math.floor(Math.random() * keys.length)];
+                    this.onlinePlayers += Math.floor(Math.random() * 17) - 5;
+                    this.tradeVolume += Math.floor(Math.random() * 1800) + 260;
+                    this.liveOrders += Math.floor(Math.random() * 9) - 3;
+                    this.latency = Math.max(26, Math.min(68, this.latency + Math.floor(Math.random() * 9) - 4));
+                    this.serverLoad = Math.max(84, Math.min(99, this.serverLoad + Math.floor(Math.random() * 5) - 2));
+
+                    this.trend.push(Math.max(28, this.trend[this.trend.length - 1] + Math.floor(Math.random() * 17) - 5));
+                    this.trend = this.trend.slice(-12);
+                    this.trendBoost = (8 + Math.random() * 8).toFixed(1);
+
+                    const index = Math.floor(Math.random() * this.marketRows.length);
+                    this.marketRows.forEach(item => item.flash = false);
+                    const item = this.marketRows[index];
+                    const value = (Math.random() * 15 - 3).toFixed(1);
+                    item.change = value >= 0 ? "+" + value + "%" : value + "%";
+                    item.state = value >= 0 ? "up" : "down";
+                    item.flash = true;
+                    setTimeout(() => { item.flash = false; }, 520);
+                    setTimeout(() => { this.bumpKey = ""; }, 380);
+                }, 1800);
+            },
+            createRipple(event) {
+                const button = event.currentTarget;
+                const circle = document.createElement("span");
+                const size = Math.max(button.clientWidth, button.clientHeight);
+                const rect = button.getBoundingClientRect();
+                circle.className = "ripple";
+                circle.style.width = circle.style.height = size + "px";
+                circle.style.left = event.clientX - rect.left - size / 2 + "px";
+                circle.style.top = event.clientY - rect.top - size / 2 + "px";
+                button.appendChild(circle);
+                circle.addEventListener("animationend", () => circle.remove());
+            },
+            login(event) {
+                if (event && event.currentTarget && event.currentTarget.classList.contains("btn-primary")) {
+                    this.createRipple(event);
+                }
+                this.errorMsg = "";
+                if (!this.username || !this.password.trim()) {
+                    this.errorMsg = "用户名和密码不能为空";
+                    this.loading = false;
+                    return;
+                }
+
+                this.loading = true;
+                const params = new URLSearchParams();
+                params.append("username", this.username);
+                params.append("password", this.password);
+
+                axios.post(window.GE_API("/login"), params)
+                    .then(res => {
+                        if (res.data.code === 200) {
+                            localStorage.setItem("playerId", res.data.id);
+                            localStorage.setItem("username", res.data.username);
+                            localStorage.setItem("gold", res.data.gold);
+                            window.GEPageTransition ? window.GEPageTransition.go("dashboard.html") : location.href = "dashboard.html";
+                        } else {
+                            this.errorMsg = res.data.msg || "登录失败，请检查账号或密码";
+                        }
+                    })
+                    .catch(() => {
+                        this.errorMsg = "服务器异常，请稍后重试";
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            }
+        }
+    });
+</script>
+</body>
+</html>

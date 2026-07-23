@@ -1,0 +1,27 @@
+# Maven 与 IDE 构建产物
+/target/
+/out/
+*.class
+*.war
+
+# IntelliJ IDEA 本地配置
+/.idea/
+*.iml
+
+# 本地环境与敏感配置
+.env
+.env.*
+!.env.example
+
+# 日志与临时文件
+*.log
+/logs/
+*.tmp
+*.bak
+*.swp
+*~
+
+# 操作系统生成文件
+.DS_Store
+Thumbs.db
+Desktop.ini

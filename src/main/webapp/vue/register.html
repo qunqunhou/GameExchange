@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="assets/js/app-config.js?v=20260723-0001"></script>
+    <title>注册账号 | Game Exchange</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            --bg: #070a10;
+            --panel: rgba(10, 17, 28, 0.82);
+            --panel-strong: rgba(12, 22, 36, 0.95);
+            --line: rgba(255, 209, 102, 0.28);
+            --cyan: #6ee7ff;
+            --mint: #6dffb8;
+            --amber: #ffd166;
+            --rose: #ff4d8d;
+            --text: #eef7ff;
+            --muted: #9fb1c8;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+        }
+
+        * { box-sizing: border-box; }
+        html { min-height: 100%; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+            color: var(--text);
+            background:
+                linear-gradient(135deg, rgba(255, 209, 102, 0.09), transparent 29%),
+                linear-gradient(225deg, rgba(110, 231, 255, 0.08), transparent 33%),
+                linear-gradient(145deg, #05070c 0%, #0a1220 48%, #111525 100%);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at var(--mouse-x) var(--mouse-y), rgba(255, 209, 102, 0.2), transparent 18rem),
+                linear-gradient(rgba(255, 209, 102, 0.052) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 231, 255, 0.044) 1px, transparent 1px);
+            background-size: auto, 42px 42px, 42px 42px;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.18));
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255,255,255,0.018) 0,
+                rgba(255,255,255,0.018) 1px,
+                transparent 1px,
+                transparent 5px
+            );
+            pointer-events: none;
+        }
+
+        a { color: inherit; }
+        [v-cloak] { display: none; }
+
+        .particle-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .auth-shell {
+            width: min(1180px, calc(100% - 32px));
+            min-height: 100vh;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.78fr);
+            align-items: center;
+            gap: 28px;
+            padding: 28px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-panel,
+        .auth-panel {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(14px);
+        }
+
+        .brand-panel {
+            min-height: 700px;
+            padding: 28px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-panel::before,
+        .auth-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(120deg, rgba(255, 209, 102, 0.14), transparent 36%),
+                linear-gradient(0deg, rgba(110, 231, 255, 0.08), transparent 52%);
+            pointer-events: none;
+        }
+
+        .data-stream {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .data-stream span {
+            position: absolute;
+            top: -40px;
+            width: 1px;
+            height: 110px;
+            background: linear-gradient(180deg, transparent, rgba(255, 209, 102, 0.72), transparent);
+            animation: streamFall 5.4s linear infinite;
+            opacity: 0.56;
+        }
+
+        .data-stream span:nth-child(1) { left: 7%; animation-delay: -2.4s; }
+        .data-stream span:nth-child(2) { left: 24%; animation-delay: -0.8s; height: 142px; }
+        .data-stream span:nth-child(3) { left: 39%; animation-delay: -4.7s; }
+        .data-stream span:nth-child(4) { left: 58%; animation-delay: -1.6s; height: 128px; }
+        .data-stream span:nth-child(5) { left: 75%; animation-delay: -3.5s; }
+        .data-stream span:nth-child(6) { left: 92%; animation-delay: -5.2s; height: 150px; }
+
+        .brand-panel > *,
+        .auth-panel > * { position: relative; z-index: 1; }
+
+        .brand-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .logo-lockup {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .logo-mark {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            color: #071019;
+            font-weight: 900;
+            background: conic-gradient(from 90deg, var(--amber), var(--mint), var(--cyan), var(--amber));
+            clip-path: polygon(50% 0, 95% 24%, 95% 76%, 50% 100%, 5% 76%, 5% 24%);
+            box-shadow: 0 0 28px rgba(255, 209, 102, 0.34);
+            animation: breathe 2.8s ease-in-out infinite;
+            flex: 0 0 auto;
+        }
+
+        .logo-text strong {
+            display: block;
+            font-size: 18px;
+        }
+
+        .logo-text span {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .loot-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 34px;
+            padding: 7px 10px;
+            border: 1px solid rgba(255, 209, 102, 0.32);
+            background: rgba(255, 209, 102, 0.1);
+            color: var(--amber);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .loot-pill::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--amber);
+            box-shadow: 0 0 16px var(--amber);
+            animation: breathe 1.8s ease-in-out infinite;
+        }
+
+        .hero-copy {
+            align-self: center;
+        }
+
+        .brand-title {
+            margin: 0 0 16px;
+            font-size: clamp(44px, 6.5vw, 80px);
+            line-height: 0.95;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .brand-title span {
+            display: block;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(238, 247, 255, 0.82);
+            text-shadow: 0 0 28px rgba(255, 209, 102, 0.32);
+        }
+
+        .brand-copy {
+            max-width: 620px;
+            margin: 0;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+        .reward-lane {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .reward {
+            min-height: 92px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 14px;
+            overflow: hidden;
+        }
+
+        .reward b {
+            display: block;
+            color: var(--amber);
+            font-size: clamp(19px, 2.1vw, 26px);
+            margin-bottom: 7px;
+            transition: transform 220ms ease, color 220ms ease;
+        }
+
+        .reward.bump b {
+            color: var(--mint);
+            transform: translateY(-2px);
+        }
+
+        .reward span {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .board {
+            border: 1px solid rgba(110, 231, 255, 0.22);
+            background: rgba(5, 9, 17, 0.74);
+            min-width: 0;
+        }
+
+        .board-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 11px 13px;
+            border-bottom: 1px solid rgba(110, 231, 255, 0.16);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .board-head strong {
+            color: #fff4cf;
+            font-size: 13px;
+        }
+
+        .pulse-text {
+            color: var(--amber);
+            animation: breathe 1.7s ease-in-out infinite;
+        }
+
+        .loot-row,
+        .rank-row {
+            display: grid;
+            grid-template-columns: 28px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            min-height: 45px;
+            padding: 10px 13px;
+            border-bottom: 1px solid rgba(110, 231, 255, 0.1);
+            font-size: 13px;
+            transition: background 200ms ease, box-shadow 200ms ease;
+        }
+
+        .loot-row:last-child,
+        .rank-row:last-child { border-bottom: 0; }
+
+        .loot-row.flash {
+            background: rgba(255, 209, 102, 0.11);
+            box-shadow: inset 3px 0 0 var(--amber);
+        }
+
+        .loot-row i,
+        .rank-row i {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 209, 102, 0.42);
+            color: var(--amber);
+            font-style: normal;
+            font-weight: 800;
+        }
+
+        .loot-row strong,
+        .rank-row strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .loot-row span {
+            color: var(--mint);
+            white-space: nowrap;
+        }
+
+        .rank-row span {
+            color: var(--cyan);
+            white-space: nowrap;
+        }
+
+        .trend-chart {
+            width: 100%;
+            padding: 12px 10px 8px;
+        }
+
+        .trend-chart svg {
+            display: block;
+            width: 100%;
+            height: 118px;
+        }
+
+        .auth-panel {
+            padding: 34px;
+            background: var(--panel-strong);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-top {
+            margin-bottom: 26px;
+        }
+
+        .panel-top p {
+            margin: 0 0 8px;
+            color: var(--amber);
+            font-size: 13px;
+            letter-spacing: 0;
+        }
+
+        .panel-top h1 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.15;
+            letter-spacing: 0;
+        }
+
+        .message {
+            padding: 12px 14px;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .message.error {
+            border: 1px solid rgba(255, 77, 141, 0.38);
+            background: rgba(255, 77, 141, 0.11);
+            color: #ffc2d8;
+        }
+
+        .message.success {
+            border: 1px solid rgba(109, 255, 184, 0.38);
+            background: rgba(109, 255, 184, 0.1);
+            color: #bfffe0;
+        }
+
+        .form-group { margin-bottom: 17px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d9ecff;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            min-height: 48px;
+            padding: 13px 14px;
+            border: 1px solid rgba(159, 177, 200, 0.32);
+            background: rgba(5, 9, 17, 0.68);
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .form-group input::placeholder { color: rgba(159, 177, 200, 0.58); }
+
+        .form-group input:focus {
+            border-color: var(--amber);
+            background: rgba(8, 16, 29, 0.9);
+            box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.14);
+        }
+
+        .hint {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .strength-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .strength-bar span {
+            height: 5px;
+            background: rgba(159, 177, 200, 0.18);
+            transition: background 160ms ease, box-shadow 160ms ease;
+        }
+
+        .strength-bar span.active-weak { background: var(--rose); }
+        .strength-bar span.active-medium { background: var(--amber); box-shadow: 0 0 12px rgba(255, 209, 102, 0.32); }
+        .strength-bar span.active-strong { background: var(--mint); box-shadow: 0 0 12px rgba(109, 255, 184, 0.34); }
+
+        .strength-tip {
+            min-height: 18px;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            min-height: 52px;
+            border: 0;
+            color: #071019;
+            background: linear-gradient(90deg, var(--amber), var(--mint), var(--cyan), var(--amber));
+            background-size: 260% 100%;
+            font-weight: 900;
+            font-size: 15px;
+            letter-spacing: 0;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+            animation: buttonFlow 4s linear infinite;
+        }
+
+        .btn-primary::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.52), transparent);
+            transition: transform 520ms ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.3), 0 18px 36px rgba(255, 209, 102, 0.22);
+        }
+
+        .btn-primary:hover::before { transform: translateX(100%); }
+
+        .btn-primary:focus-visible,
+        .links a:focus-visible {
+            outline: 3px solid rgba(110, 231, 255, 0.75);
+            outline-offset: 3px;
+        }
+
+        .btn-primary:disabled {
+            cursor: not-allowed;
+            filter: grayscale(0.6) brightness(0.8);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-label {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(7, 16, 25, 0.28);
+            border-top-color: #071019;
+            border-radius: 50%;
+            animation: spin 680ms linear infinite;
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            background: rgba(255, 255, 255, 0.54);
+            animation: ripple 620ms ease-out;
+            pointer-events: none;
+        }
+
+        .links {
+            margin-top: 22px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .links a {
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+
+        .links a:hover {
+            color: var(--amber);
+            border-bottom-color: var(--amber);
+        }
+
+        @keyframes streamFall {
+            from { transform: translateY(-12%); }
+            to { transform: translateY(780px); }
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.72; filter: drop-shadow(0 0 6px rgba(255,209,102,0.35)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(255,209,102,0.62)); }
+        }
+
+        @keyframes buttonFlow {
+            from { background-position: 0% 50%; }
+            to { background-position: 260% 50%; }
+        }
+
+        @keyframes ripple {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 980px) {
+            body { overflow: auto; }
+            .auth-shell {
+                grid-template-columns: 1fr;
+                width: min(620px, calc(100% - 28px));
+            }
+            .brand-panel {
+                min-height: auto;
+                padding: 24px;
+            }
+            .brand-title { font-size: clamp(38px, 12vw, 64px); }
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 620px) {
+            .auth-shell { width: calc(100% - 20px); padding: 10px 0; }
+            .auth-panel, .brand-panel { padding: 22px; }
+            .brand-top { align-items: flex-start; flex-direction: column; }
+            .reward-lane { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 420px) {
+            .reward-lane { grid-template-columns: 1fr; }
+            .board-head { align-items: flex-start; flex-direction: column; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.001ms !important;
+            }
+            .particle-canvas { display: none; }
+        }
+    </style>
+    <link rel="stylesheet" href="assets/css/neo-ui.css">
+    <link rel="stylesheet" href="assets/css/neo3d-shared.css?v=20260628-0042">
+    <link rel="stylesheet" href="assets/css/auth-neo-shared.css">
+    <link rel="stylesheet" href="assets/css/register-neo-scene.css?v=20260628-0115">
+    <script defer src="assets/js/neo3d/force-showcase.js?v=20260628-0224"></script>
+</head>
+<body class="register-page">
+<canvas id="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
+<div class="register-hud-corners" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+</div>
+<header class="register-auth-identity" aria-label="Game Exchange Registration Module">
+    <div class="register-logo">GE</div>
+    <div>
+        <strong>GAME EXCHANGE</strong>
+        <span>CONNECTING TO AUTH SERVER... SUCCESS</span>
+        <span>ENCRYPTION PROTOCOL: AES-256</span>
+        <span>REGISTRATION MODULE // READY</span>
+    </div>
+</header>
+<div class="register-network" aria-hidden="true">
+    <span class="network-radar"></span>
+    <span>PING: 24MS // REGION: ASIA_NODE_1</span>
+</div>
+<main id="app" class="auth-shell" @mousemove="trackMouse">
+    <section class="brand-panel" hidden aria-hidden="true" style="display: none !important;">
+        <div class="data-stream" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="brand-top">
+            <div class="logo-lockup">
+                <div class="logo-mark" aria-hidden="true">GE</div>
+                <div class="logo-text">
+                    <strong>Game Exchange</strong>
+                    <span>新玩家资产港口</span>
+                </div>
+            </div>
+            <div class="loot-pill">稀有掉落 {{ rareDropRate }}%</div>
+        </div>
+
+        <div class="hero-copy">
+            <h2 class="brand-title">Start <span>Trading</span></h2>
+            <p class="brand-copy">
+                创建账号后领取启动金币，进入装备、材料、稀有掉落与玩家资产排行。这里不是普通注册页，而是玩家交易身份的开仓入口。
+            </p>
+
+            <div class="reward-lane" aria-label="新账号权益">
+                <div class="reward" :class="{ bump: bumpKey === 'gold' }">
+                    <b>{{ starterGold.toLocaleString() }}</b><span>初始金币</span>
+                </div>
+                <div class="reward" :class="{ bump: bumpKey === 'items' }">
+                    <b>{{ itemPool }}</b><span>可交易装备</span>
+                </div>
+                <div class="reward" :class="{ bump: bumpKey === 'players' }">
+                    <b>{{ newPlayers }}</b><span>今日新玩家</span>
+                </div>
+                <div class="reward" :class="{ bump: bumpKey === 'drops' }">
+                    <b>{{ rareDrops }}</b><span>稀有掉落上架</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="board" aria-label="稀有掉落动态">
+                <div class="board-head">
+                    <strong>稀有掉落</strong>
+                    <span class="pulse-text">LIVE DROP</span>
+                </div>
+                <div class="loot-row" v-for="(drop, index) in lootDrops" :key="drop.name" :class="{ flash: drop.flash }">
+                    <i>{{ index + 1 }}</i>
+                    <strong>{{ drop.name }}</strong>
+                    <span>{{ drop.price }}</span>
+                </div>
+            </div>
+
+            <div class="board" aria-label="装备排行榜">
+                <div class="board-head">
+                    <strong>装备排行榜</strong>
+                    <span>HOT</span>
+                </div>
+                <div class="rank-row" v-for="(gear, index) in gearRank" :key="gear.name">
+                    <i>{{ index + 1 }}</i>
+                    <strong>{{ gear.name }}</strong>
+                    <span>{{ gear.score }}</span>
+                </div>
+            </div>
+
+            <div class="board" aria-label="玩家财富榜">
+                <div class="board-head">
+                    <strong>玩家财富榜</strong>
+                    <span>TOP 3</span>
+                </div>
+                <div class="rank-row" v-for="(player, index) in wealthRank" :key="player.name">
+                    <i>{{ index + 1 }}</i>
+                    <strong>{{ player.name }}</strong>
+                    <span>{{ player.gold }}</span>
+                </div>
+            </div>
+
+            <div class="board" aria-label="交易额趋势">
+                <div class="board-head">
+                    <strong>交易额趋势</strong>
+                    <span class="pulse-text">UP {{ trendBoost }}%</span>
+                </div>
+                <div class="trend-chart" aria-hidden="true">
+                    <svg viewBox="0 0 240 118" preserveAspectRatio="none">
+                        <path d="M0 95 L240 95 M0 62 L240 62 M0 29 L240 29" stroke="rgba(159,177,200,0.16)" stroke-width="1" />
+                        <polyline :points="trendPoints" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        <polyline :points="trendPoints" fill="none" stroke="rgba(110,231,255,0.38)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-panel" aria-label="注册表单">
+        <div class="panel-top">
+            <p>CREATE ACCOUNT</p>
+            <h1>创建玩家账号</h1>
+        </div>
+
+        <div class="message error" v-if="errorMsg" v-cloak role="alert">{{ errorMsg }}</div>
+        <div class="message success" v-if="successMsg" v-cloak role="status">{{ successMsg }}</div>
+
+        <div class="form-group">
+            <label for="username">PLAYER ACCOUNT</label>
+            <div class="reg-input-wrap">
+                <span class="reg-input-icon user-grid" aria-hidden="true"></span>
+                <input id="username" type="text" v-model.trim="username"
+                       placeholder="2-16位字符" autocomplete="username"
+                       minlength="2" maxlength="16" required @keyup.enter="register">
+                <span class="field-state" :class="usernameState.className">{{ usernameState.text }}</span>
+            </div>
+            <div class="hint">注册成功后获得初始金币 10,000。</div>
+        </div>
+
+        <div class="form-group">
+            <label for="password">SET ACCESS KEY</label>
+            <div class="reg-input-wrap">
+                <span class="reg-input-icon key-lock" aria-hidden="true"></span>
+                <input id="password" type="password" v-model="password"
+                       placeholder="不少于 6 位" autocomplete="new-password"
+                       minlength="6" required @keyup.enter="register">
+                <span class="field-state" :class="passwordState.className">{{ passwordState.text }}</span>
+            </div>
+            <div class="strength-bar" :class="{ visible: password.length > 0 }" aria-hidden="true">
+                <span :class="strengthClass(1)"></span>
+                <span :class="strengthClass(2)"></span>
+                <span :class="strengthClass(3)"></span>
+                <span :class="strengthClass(4)"></span>
+            </div>
+            <div class="strength-tip" aria-live="polite">{{ strengthText }}</div>
+        </div>
+
+        <div class="form-group">
+            <label for="confirm">CONFIRM ACCESS KEY</label>
+            <div class="reg-input-wrap">
+                <span class="reg-input-icon shield-check" aria-hidden="true"></span>
+                <input id="confirm" type="password" v-model="confirm"
+                       placeholder="再次输入密码" autocomplete="new-password"
+                       minlength="6" required @keyup.enter="register">
+                <span class="field-state" :class="confirmState.className">{{ confirmState.text }}</span>
+            </div>
+        </div>
+
+        <button class="btn-primary" @click="register" :disabled="loading" :class="{ loading: loading }">
+            <span class="btn-label">
+                <i class="spinner" v-if="loading" aria-hidden="true"></i>
+                {{ loading ? "正在创建账号..." : "开通交易账号" }}
+            </span>
+        </button>
+
+        <div class="links">
+            <a href="login.html">已有账号，返回登录</a>
+        </div>
+    </section>
+</main>
+
+<script>
+    window.GE_CURRENT_VM = new Vue({
+        el: "#app",
+        data: {
+            username: "",
+            password: "",
+            confirm: "",
+            errorMsg: "",
+            successMsg: "",
+            loading: false,
+            starterGold: 10000,
+            itemPool: 862,
+            newPlayers: 128,
+            rareDrops: 34,
+            rareDropRate: "7.6",
+            bumpKey: "",
+            trendBoost: "15.2",
+            trend: [32, 38, 45, 43, 56, 64, 60, 72, 86, 92],
+            lootDrops: [
+                { name: "炽焰法杖", price: "88K", flash: false },
+                { name: "霜魂戒指", price: "64K", flash: false },
+                { name: "星界披风", price: "52K", flash: false }
+            ],
+            gearRank: [
+                { name: "龙鳞护甲", score: "S+" },
+                { name: "星辉长剑", score: "S" },
+                { name: "能量核心", score: "A+" }
+            ],
+            wealthRank: [
+                { name: "NightBlade", gold: "982K" },
+                { name: "星港商人", gold: "744K" },
+                { name: "ManaForge", gold: "698K" }
+            ],
+            timer: null,
+            particleFrame: null
+        },
+        computed: {
+            usernameState() {
+                if (!this.username) return { text: "", className: "" };
+                if (this.username.length >= 2 && this.username.length <= 16) {
+                    return { text: "VALID //", className: "valid" };
+                }
+                return { text: "INVALID //", className: "invalid" };
+            },
+            passwordState() {
+                if (!this.password) return { text: "", className: "" };
+                if (this.password.length >= 6) {
+                    return { text: "VALID //", className: "valid" };
+                }
+                return { text: "INVALID //", className: "invalid" };
+            },
+            confirmState() {
+                if (!this.confirm) return { text: "", className: "" };
+                if (this.confirm === this.password) {
+                    return { text: "VALID //", className: "valid" };
+                }
+                return { text: "INVALID //", className: "invalid" };
+            },
+            strengthLevel() {
+                const p = this.password;
+                if (!p) return 0;
+                let score = 0;
+                if (p.length >= 6) score++;
+                if (p.length >= 10) score++;
+                if (/[A-Z]/.test(p) || /[0-9]/.test(p)) score++;
+                if (/[^a-zA-Z0-9]/.test(p)) score++;
+                return score;
+            },
+            strengthText() {
+                const texts = ["", "强度：较弱", "强度：一般", "强度：较强", "强度：强"];
+                return texts[this.strengthLevel] || "";
+            },
+            trendPoints() {
+                const max = Math.max.apply(null, this.trend);
+                const min = Math.min.apply(null, this.trend);
+                return this.trend.map((value, index) => {
+                    const x = index * (240 / (this.trend.length - 1));
+                    const y = 102 - ((value - min) / Math.max(max - min, 1)) * 82;
+                    return x.toFixed(1) + "," + y.toFixed(1);
+                }).join(" ");
+            }
+        },
+        mounted() {
+            this.startParticles();
+            this.startLivePulse();
+        },
+        beforeDestroy() {
+            clearInterval(this.timer);
+            cancelAnimationFrame(this.particleFrame);
+        },
+        methods: {
+            trackMouse(event) {
+                document.documentElement.style.setProperty("--mouse-x", event.clientX + "px");
+                document.documentElement.style.setProperty("--mouse-y", event.clientY + "px");
+            },
+            startLivePulse() {
+                this.timer = setInterval(() => {
+                    const keys = ["gold", "items", "players", "drops"];
+                    this.bumpKey = keys[Math.floor(Math.random() * keys.length)];
+                    this.itemPool += Math.floor(Math.random() * 7) - 1;
+                    this.newPlayers += Math.floor(Math.random() * 5);
+                    this.rareDrops += Math.floor(Math.random() * 3);
+                    this.rareDropRate = (6.8 + Math.random() * 1.9).toFixed(1);
+                    this.trend.push(Math.max(26, this.trend[this.trend.length - 1] + Math.floor(Math.random() * 15) - 3));
+                    this.trend = this.trend.slice(-10);
+                    this.trendBoost = (10 + Math.random() * 9).toFixed(1);
+
+                    const index = Math.floor(Math.random() * this.lootDrops.length);
+                    this.lootDrops.forEach(item => item.flash = false);
+                    this.lootDrops[index].flash = true;
+                    setTimeout(() => { this.lootDrops[index].flash = false; }, 520);
+                    setTimeout(() => { this.bumpKey = ""; }, 380);
+                }, 1800);
+            },
+            startParticles() {
+                if (window.GE_NEO_VISUALS_ENABLED) return;
+                if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+                const canvas = document.getElementById("particleCanvas");
+                const ctx = canvas.getContext("2d");
+                const particles = [];
+                const resize = () => {
+                    canvas.width = window.innerWidth * window.devicePixelRatio;
+                    canvas.height = window.innerHeight * window.devicePixelRatio;
+                    canvas.style.width = window.innerWidth + "px";
+                    canvas.style.height = window.innerHeight + "px";
+                    ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+                };
+                resize();
+                window.addEventListener("resize", resize);
+
+                for (let i = 0; i < 70; i++) {
+                    particles.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        vx: (Math.random() - 0.5) * 0.34,
+                        vy: (Math.random() - 0.5) * 0.34,
+                        r: Math.random() * 1.8 + 0.8
+                    });
+                }
+
+                const draw = () => {
+                    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                    particles.forEach((p, index) => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        if (p.x < 0 || p.x > window.innerWidth) p.vx *= -1;
+                        if (p.y < 0 || p.y > window.innerHeight) p.vy *= -1;
+
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                        ctx.fillStyle = "rgba(255, 209, 102, 0.5)";
+                        ctx.fill();
+
+                        for (let j = index + 1; j < particles.length; j++) {
+                            const q = particles[j];
+                            const distance = Math.hypot(p.x - q.x, p.y - q.y);
+                            if (distance < 112) {
+                                ctx.strokeStyle = "rgba(110, 231, 255," + (0.12 - distance / 1000) + ")";
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(p.x, p.y);
+                                ctx.lineTo(q.x, q.y);
+                                ctx.stroke();
+                            }
+                        }
+                    });
+                    this.particleFrame = requestAnimationFrame(draw);
+                };
+                draw();
+            },
+            strengthClass(index) {
+                if (index > this.strengthLevel) return "";
+                if (this.strengthLevel <= 1) return "active-weak";
+                if (this.strengthLevel <= 2) return "active-medium";
+                return "active-strong";
+            },
+            createRipple(event) {
+                const button = event.currentTarget;
+                const circle = document.createElement("span");
+                const size = Math.max(button.clientWidth, button.clientHeight);
+                const rect = button.getBoundingClientRect();
+                circle.className = "ripple";
+                circle.style.width = circle.style.height = size + "px";
+                circle.style.left = event.clientX - rect.left - size / 2 + "px";
+                circle.style.top = event.clientY - rect.top - size / 2 + "px";
+                button.appendChild(circle);
+                circle.addEventListener("animationend", () => circle.remove());
+            },
+            register(event) {
+                if (event && event.currentTarget && event.currentTarget.classList.contains("btn-primary")) {
+                    this.createRipple(event);
+                }
+                this.errorMsg = "";
+                this.successMsg = "";
+
+                if (!this.username || !this.password.trim()) {
+                    this.errorMsg = "用户名和密码不能为空";
+                    return;
+                }
+                if (this.username.length < 2) {
+                    this.errorMsg = "用户名至少 2 位";
+                    return;
+                }
+                if (this.password.length < 6) {
+                    this.errorMsg = "密码不能少于 6 位";
+                    return;
+                }
+                if (this.password !== this.confirm) {
+                    this.errorMsg = "两次密码输入不一致";
+                    return;
+                }
+
+                this.loading = true;
+                const params = new URLSearchParams();
+                params.append("username", this.username);
+                params.append("password", this.password);
+                params.append("confirm", this.confirm);
+
+                axios.post(window.GE_API("/register"), params)
+                    .then(res => {
+                        if (res.data.code === 200) {
+                            this.successMsg = (res.data.msg || "注册成功") + "，3 秒后跳转登录...";
+                            setTimeout(() => {
+                                window.GEPageTransition ? window.GEPageTransition.go("login.html") : location.href = "login.html";
+                            }, 3000);
+                        } else {
+                            this.errorMsg = res.data.msg || "注册失败，请稍后重试";
+                        }
+                    })
+                    .catch(() => {
+                        this.errorMsg = "服务器异常，请稍后重试";
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            }
+        }
+    });
+</script>
+</body>
+</html>

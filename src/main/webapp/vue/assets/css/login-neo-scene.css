@@ -1,0 +1,686 @@
+body {
+    isolation: isolate;
+    background:
+        radial-gradient(circle at 14% 18%, rgba(105, 232, 255, 0.14), transparent 28rem),
+        radial-gradient(circle at 78% 20%, rgba(169, 135, 255, 0.16), transparent 30rem),
+        linear-gradient(145deg, #02040a 0%, #06111f 44%, #100922 100%) !important;
+}
+
+body::before {
+    opacity: 0.38;
+}
+
+body::after {
+    opacity: 0.42;
+}
+
+.ge-visual-root {
+    opacity: 1 !important;
+    background:
+        radial-gradient(circle at 58% 48%, rgba(105, 232, 255, 0.34), transparent 18rem),
+        radial-gradient(circle at 76% 58%, rgba(255, 92, 168, 0.2), transparent 22rem),
+        radial-gradient(circle at var(--ge-mouse-x, 50%) var(--ge-mouse-y, 50%), rgba(169, 135, 255, 0.28), transparent 24rem) !important;
+}
+
+.ge-force-visual-root canvas {
+    opacity: 0.96;
+    filter: saturate(1.8) contrast(1.24) brightness(1.18);
+}
+
+.ge-visual-root canvas {
+    filter: saturate(1.55) contrast(1.18) brightness(1.16);
+}
+
+.auth-shell,
+main[id="app"] {
+    z-index: 3 !important;
+}
+
+.auth-shell {
+    width: min(1580px, calc(100% - 56px)) !important;
+    grid-template-columns: minmax(600px, 760px) minmax(360px, 410px) !important;
+    justify-content: space-between;
+    gap: clamp(220px, 16vw, 360px) !important;
+    perspective: 1200px;
+}
+
+.auth-shell::before,
+.auth-shell::after {
+    content: "";
+    position: fixed;
+    pointer-events: none;
+    border-radius: 999px;
+    filter: blur(30px);
+    opacity: 0.42;
+    z-index: -1;
+}
+
+.auth-shell::before {
+    width: 22rem;
+    height: 22rem;
+    left: max(-8rem, -12vw);
+    top: 12vh;
+    background: radial-gradient(circle, rgba(105, 232, 255, 0.45), transparent 68%);
+}
+
+.auth-shell::after {
+    width: 18rem;
+    height: 18rem;
+    right: max(-7rem, -10vw);
+    bottom: 10vh;
+    background: radial-gradient(circle, rgba(255, 92, 168, 0.32), transparent 68%);
+}
+
+.brand-panel,
+.auth-panel {
+    border: 1px solid rgba(160, 230, 255, 0.24) !important;
+    border-radius: 8px !important;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.018)),
+        rgba(5, 10, 22, 0.28) !important;
+    box-shadow:
+        0 34px 90px rgba(0, 0, 0, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.09) !important;
+    backdrop-filter: blur(13px) saturate(128%) !important;
+    -webkit-backdrop-filter: blur(13px) saturate(128%) !important;
+}
+
+.ge-webgl-ready .brand-panel,
+.ge-webgl-ready .auth-panel {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.014)),
+        rgba(5, 10, 22, 0.22) !important;
+}
+
+.ge-webgl-ready .brand-panel {
+    box-shadow:
+        0 34px 90px rgba(0, 0, 0, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(105, 232, 255, 0.08) !important;
+}
+
+.brand-panel {
+    min-height: min(720px, calc(100vh - 56px)) !important;
+    max-width: 760px;
+    justify-self: start;
+}
+
+.brand-panel::before,
+.auth-panel::before {
+    background:
+        radial-gradient(circle at calc(50% + var(--tilt-x, 0%)) calc(50% + var(--tilt-y, 0%)), rgba(105, 232, 255, 0.08), transparent 16rem),
+        linear-gradient(128deg, rgba(105, 232, 255, 0.05), transparent 34%),
+        linear-gradient(314deg, rgba(169, 135, 255, 0.06), transparent 42%) !important;
+}
+
+.brand-panel::after,
+.auth-panel::after {
+    background:
+        linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.16) 44%, transparent 60%),
+        radial-gradient(circle at 84% 12%, rgba(169, 135, 255, 0.18), transparent 14rem) !important;
+    transform: translateX(-26%);
+    opacity: 0.18;
+}
+
+.auth-panel {
+    max-width: 410px;
+    justify-self: end;
+    transform: translateZ(22px);
+}
+
+.brand-title {
+    font-size: clamp(48px, 6vw, 86px) !important;
+    max-width: 760px;
+}
+
+.brand-copy {
+    max-width: 760px !important;
+}
+
+.live-grid {
+    grid-template-columns: repeat(4, minmax(132px, 1fr)) !important;
+}
+
+.market-layout {
+    grid-template-columns: minmax(360px, 1.05fr) minmax(300px, 0.95fr) !important;
+}
+
+.panel-top p {
+    color: var(--neo-mint) !important;
+    font-weight: 800;
+}
+
+.panel-top h1 {
+    color: #f6fbff;
+    text-shadow: 0 0 28px rgba(105, 232, 255, 0.22);
+}
+
+.brand-title {
+    font-size: clamp(48px, 7vw, 92px) !important;
+}
+
+.brand-copy,
+.logo-text span,
+.terminal-head,
+.rank-row,
+.trend-meta,
+.link-row {
+    color: rgba(222, 235, 255, 0.72) !important;
+}
+
+.live-card,
+.terminal-board,
+.trend-board,
+.rank-board {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025)),
+        rgba(6, 13, 26, 0.32) !important;
+}
+
+.input-wrap input {
+    min-height: 54px !important;
+    border-color: rgba(153, 220, 255, 0.25) !important;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.025)),
+        rgba(5, 10, 22, 0.62) !important;
+}
+
+.btn-primary {
+    min-height: 56px !important;
+    text-transform: none;
+    box-shadow:
+        0 16px 42px rgba(105, 232, 255, 0.22),
+        0 0 0 1px rgba(255, 255, 255, 0.16) inset !important;
+}
+
+.btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 44%);
+    pointer-events: none;
+}
+
+.link-row a {
+    color: rgba(235, 244, 255, 0.76);
+}
+
+.link-row a:hover {
+    color: var(--neo-cyan) !important;
+}
+
+.data-stream {
+    opacity: 0.58;
+}
+
+@media (max-width: 980px) {
+    .auth-shell {
+        grid-template-columns: 1fr !important;
+        width: min(680px, calc(100% - 28px)) !important;
+        gap: 18px !important;
+    }
+
+    .auth-panel {
+        max-width: none;
+        justify-self: stretch;
+        order: -1;
+    }
+
+    .brand-panel {
+        min-height: auto !important;
+    }
+}
+
+@media (max-width: 620px) {
+    .auth-shell {
+        width: calc(100% - 20px) !important;
+    }
+
+    .auth-panel,
+    .brand-panel {
+        padding: 22px !important;
+    }
+}
+
+body.ge-direct-render {
+    background: #000 !important;
+}
+
+body.ge-direct-render::before,
+body.ge-direct-render::after {
+    display: none !important;
+}
+
+body.ge-direct-render .brand-panel {
+    display: none !important;
+}
+
+body.ge-direct-render .auth-shell {
+    width: min(1280px, calc(100% - 56px)) !important;
+    grid-template-columns: minmax(340px, 430px) !important;
+    justify-content: end !important;
+    gap: 0 !important;
+    padding-right: clamp(16px, 4vw, 72px) !important;
+}
+
+body.ge-direct-render .auth-panel {
+    max-width: 430px !important;
+    justify-self: end !important;
+}
+
+@media (max-width: 720px) {
+    body.ge-direct-render .auth-shell {
+        width: min(430px, calc(100% - 24px)) !important;
+        min-height: 100vh;
+        justify-content: center !important;
+        padding-right: 0 !important;
+    }
+
+    body.ge-direct-render .auth-panel {
+        justify-self: stretch !important;
+    }
+}
+
+body.ge-direct-render {
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: #f4fbff;
+}
+
+.login-ambient {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.42;
+    z-index: 1;
+}
+
+.ambient-core {
+    width: 42vw;
+    height: 42vw;
+    left: 6vw;
+    top: 20vh;
+    background: rgba(31, 74, 160, 0.42);
+}
+
+.ambient-corner {
+    width: 34vw;
+    height: 34vw;
+    right: -8vw;
+    bottom: -10vw;
+    background: rgba(95, 38, 135, 0.48);
+}
+
+.login-brand-identity {
+    position: fixed;
+    top: clamp(22px, 4vh, 42px);
+    left: clamp(22px, 4vw, 54px);
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    pointer-events: none;
+    animation: terminalReveal 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.brand-sigil {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    color: #041017;
+    font-weight: 900;
+    background: linear-gradient(135deg, #73ffca, #00f3ff 54%, #ff007f);
+    clip-path: polygon(14% 0, 100% 0, 100% 76%, 82% 100%, 0 100%, 0 20%);
+    box-shadow: 0 0 28px rgba(0, 243, 255, 0.36);
+}
+
+.login-brand-identity strong {
+    display: block;
+    color: #9ff8ff;
+    font-size: clamp(16px, 1.8vw, 24px);
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 18px rgba(0, 243, 255, 0.48);
+}
+
+.login-brand-identity span {
+    display: block;
+    margin-top: 7px;
+    color: rgba(171, 156, 210, 0.58);
+    font-size: 11px;
+    font-style: italic;
+    letter-spacing: 0.08em;
+}
+
+.login-legal {
+    position: fixed;
+    right: clamp(20px, 4vw, 54px);
+    bottom: clamp(16px, 3vh, 28px);
+    z-index: 4;
+    max-width: min(640px, calc(100% - 40px));
+    color: rgba(222, 235, 255, 0.3);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-align: right;
+    pointer-events: none;
+}
+
+.hud-radar {
+    position: fixed;
+    top: clamp(28px, 5vh, 58px);
+    right: clamp(28px, 5vw, 78px);
+    width: 112px;
+    aspect-ratio: 1;
+    z-index: 2;
+    border: 1px solid rgba(0, 243, 255, 0.22);
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, transparent 0 30%, rgba(0, 243, 255, 0.08) 31% 32%, transparent 33% 100%),
+        conic-gradient(from 0deg, rgba(0, 243, 255, 0.36), transparent 24%, rgba(255, 0, 127, 0.2), transparent 58%);
+    opacity: 0.62;
+    animation: radarSpin 9s linear infinite;
+}
+
+.hud-radar span {
+    position: absolute;
+    inset: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+}
+
+.hud-radar span:nth-child(2) {
+    inset: 34px;
+}
+
+.hud-radar span:nth-child(3) {
+    inset: 50%;
+    width: 52%;
+    height: 1px;
+    border: 0;
+    background: linear-gradient(90deg, rgba(0, 243, 255, 0.75), transparent);
+    transform-origin: left center;
+}
+
+.hud-crosshair {
+    position: fixed;
+    left: clamp(24px, 4vw, 64px);
+    bottom: clamp(54px, 9vh, 104px);
+    z-index: 2;
+    width: 170px;
+    height: 92px;
+    color: rgba(115, 255, 202, 0.58);
+    font: 10px/1.2 "Consolas", "Segoe UI", monospace;
+    pointer-events: none;
+}
+
+.cross-line {
+    position: absolute;
+    background: rgba(0, 243, 255, 0.32);
+    box-shadow: 0 0 14px rgba(0, 243, 255, 0.32);
+}
+
+.cross-line.horizontal {
+    left: 0;
+    top: 36px;
+    width: 108px;
+    height: 1px;
+}
+
+.cross-line.vertical {
+    left: 36px;
+    top: 0;
+    width: 1px;
+    height: 72px;
+}
+
+.hex-feed {
+    position: absolute;
+    left: 48px;
+    top: 50px;
+    animation: hexPulse 1.8s steps(2, end) infinite;
+}
+
+.hud-system-copy {
+    position: fixed;
+    right: clamp(26px, 5vw, 82px);
+    top: 34vh;
+    z-index: 2;
+    display: grid;
+    gap: 8px;
+    color: rgba(196, 211, 255, 0.36);
+    font: 10px/1.2 "Consolas", "Segoe UI", monospace;
+    letter-spacing: 0.08em;
+    text-align: right;
+    pointer-events: none;
+}
+
+body.ge-direct-render .auth-shell {
+    width: min(1440px, calc(100% - 56px)) !important;
+    grid-template-columns: minmax(420px, 500px) !important;
+    justify-content: end !important;
+    padding-right: clamp(52px, 7vw, 124px) !important;
+    padding-top: clamp(84px, 11vh, 128px) !important;
+    padding-bottom: clamp(72px, 9vh, 110px) !important;
+}
+
+body.ge-direct-render .auth-panel {
+    width: min(500px, 100%) !important;
+    max-width: 500px !important;
+    min-height: 520px;
+    padding: 40px 42px 34px !important;
+    clip-path: polygon(24px 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%, 0 24px);
+    border: 1px solid transparent !important;
+    background:
+        linear-gradient(145deg, rgba(255,255,255,0.088), rgba(255,255,255,0.018)),
+        linear-gradient(rgba(0, 243, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.035) 1px, transparent 1px),
+        rgba(5, 10, 22, 0.34) !important;
+    background-size: auto, 18px 18px, 18px 18px, auto;
+    box-shadow:
+        0 32px 86px rgba(0, 0, 0, 0.54),
+        0 0 56px rgba(0, 243, 255, 0.13),
+        0 0 42px rgba(255, 0, 127, 0.1),
+        inset 0 1px 0 rgba(255,255,255,0.18) !important;
+    animation: terminalPanelIn 760ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+body.ge-direct-render .auth-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    clip-path: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #00f3ff, rgba(0, 243, 255, 0.12) 42%, rgba(255, 0, 127, 0.82));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+body.ge-direct-render .auth-panel::after {
+    clip-path: inherit;
+}
+
+body.ge-direct-render .panel-top {
+    margin-bottom: 30px;
+}
+
+body.ge-direct-render .panel-top p {
+    font-size: 12px;
+    color: #73ffca !important;
+}
+
+body.ge-direct-render .panel-top h1 {
+    font-size: clamp(30px, 3vw, 38px);
+    letter-spacing: 0;
+}
+
+body.ge-direct-render .input-wrap {
+    position: relative;
+}
+
+body.ge-direct-render .input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    z-index: 2;
+    border: 1px solid rgba(0, 243, 255, 0.46);
+    box-shadow: 0 0 14px rgba(0, 243, 255, 0.18);
+    pointer-events: none;
+}
+
+body.ge-direct-render .user-icon {
+    border-radius: 3px;
+}
+
+body.ge-direct-render .user-icon::before,
+body.ge-direct-render .lock-icon::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(115, 255, 202, 0.72);
+}
+
+body.ge-direct-render .lock-icon {
+    clip-path: polygon(18% 38%, 18% 100%, 82% 100%, 82% 38%, 68% 38%, 68% 24%, 50% 12%, 32% 24%, 32% 38%);
+}
+
+body.ge-direct-render .input-wrap input {
+    padding-left: 46px !important;
+    padding-right: 100px !important;
+}
+
+body.ge-direct-render .scan-hint {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(115, 255, 202, 0);
+    font: 9px/1 "Consolas", monospace;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+}
+
+body.ge-direct-render .input-wrap:focus-within .scan-hint {
+    color: rgba(115, 255, 202, 0.8);
+    animation: scanBlink 840ms steps(2, end) infinite;
+}
+
+.terminal-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin: -2px 0 18px;
+    color: rgba(222, 235, 255, 0.68);
+    font-size: 12px;
+}
+
+.remember-terminal {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.remember-terminal input {
+    width: 15px;
+    height: 15px;
+    min-height: 0 !important;
+    accent-color: #00f3ff;
+}
+
+.key-reset {
+    border: 0;
+    padding: 0;
+    color: rgba(0, 243, 255, 0.74);
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+
+.fast-access {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 4px;
+    color: rgba(196, 211, 255, 0.5);
+    font: 10px/1 "Consolas", monospace;
+    letter-spacing: 0.1em;
+}
+
+.provider {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(0, 243, 255, 0.25);
+    color: rgba(244, 251, 255, 0.78);
+    background: rgba(5, 12, 24, 0.44);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    cursor: pointer;
+}
+
+.provider:hover {
+    color: #06111b;
+    background: linear-gradient(135deg, #73ffca, #00f3ff);
+}
+
+@keyframes terminalReveal {
+    from { opacity: 0; transform: translateY(-12px); filter: blur(6px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes terminalPanelIn {
+    0% { opacity: 0; transform: translateX(48px) scale(0.985); filter: blur(8px); }
+    54% { opacity: 1; filter: brightness(1.35); }
+    100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+}
+
+@keyframes radarSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes scanBlink {
+    50% { opacity: 0.32; }
+}
+
+@keyframes hexPulse {
+    50% { opacity: 0.44; }
+}
+
+@media (max-width: 900px) {
+    .hud-radar,
+    .hud-system-copy {
+        display: none;
+    }
+
+    .login-brand-identity {
+        position: absolute;
+    }
+}
+
+@media (max-width: 720px) {
+    body.ge-direct-render .auth-shell {
+        padding-top: 120px !important;
+        padding-bottom: 72px !important;
+    }
+
+    body.ge-direct-render .auth-panel {
+        min-height: auto;
+        padding: 30px 24px !important;
+    }
+
+    .login-legal {
+        left: 20px;
+        right: 20px;
+        text-align: center;
+    }
+}
