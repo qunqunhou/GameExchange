@@ -1,11 +1,17 @@
 package com.game.util;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.pool.DruidDataSourceFactory;
+import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,14 +20,14 @@ public class DBUtil {
 
     private static final Logger LOGGER = Logger.getLogger(DBUtil.class.getName());
     private static final String CONFIG_RESOURCE = "db.properties";
-    private static final DataSource dataSource;
+    private static final DruidDataSource dataSource;
 
     static {
         try {
             Properties properties = loadProperties();
             applyOverrides(properties);
             validateRequiredProperties(properties);
-            dataSource = DruidDataSourceFactory.createDataSource(properties);
+            dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(properties);
             LOGGER.info("数据库连接池初始化成功");
         } catch (Exception e) {
             throw new RuntimeException("连接池初始化失败", e);
@@ -111,5 +117,41 @@ public class DBUtil {
 
     public static DataSource getDataSource() {
         return dataSource;
+    }
+
+    public static synchronized void shutdown() {
+        try {
+            if (!dataSource.isClosed()) {
+                dataSource.close();
+                LOGGER.info("数据库连接池已关闭");
+            }
+        } finally {
+            if (AbandonedConnectionCleanupThread.isAlive()) {
+                AbandonedConnectionCleanupThread.checkedShutdown();
+                LOGGER.info("MySQL 驱动清理线程已关闭");
+            }
+            deregisterJdbcDrivers();
+        }
+    }
+
+    private static void deregisterJdbcDrivers() {
+        ClassLoader applicationClassLoader = DBUtil.class.getClassLoader();
+        Enumeration<Driver> drivers = DriverManager.getDrivers();
+
+        while (drivers.hasMoreElements()) {
+            Driver driver = drivers.nextElement();
+            if (driver.getClass().getClassLoader() != applicationClassLoader) {
+                continue;
+            }
+
+            try {
+                DriverManager.deregisterDriver(driver);
+                LOGGER.log(Level.INFO, "JDBC 驱动已注销：{0}",
+                        driver.getClass().getName());
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "注销 JDBC 驱动失败："
+                        + driver.getClass().getName(), e);
+            }
+        }
     }
 }
