@@ -16,12 +16,15 @@
 | Overall Status | `BLOCKED` |
 | RC Gate Status | `PASSED` |
 | RC Version | `1.0.0-rc1` |
-| Git Commit | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
+| Git Commit (Artifact) | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
+| Documentation Commit | `f3d1534fe579ba9e38d27bbead57a023b9de0ebf` |
 | Git Tag | `BLOCKED - not created` |
 | Verification Date | `2026-08-01` |
 | Release Gate Evidence | `target/release-gate/20260801-194735-296-859df335/` |
 | Docker Runtime Evidence | `target/docker-runtime/20260801-195124-baecc6d3/` |
 | Artifact Manifest | `target/release-manifest/20260801-195218-985-d4cd4758/release-manifest.json` |
+
+Artifact Identity 来源于 commit `6cc2c88dd01bd6aea29f4e58d591031e6275079e`。Documentation Freeze 来源于 commit `f3d1534fe579ba9e38d27bbead57a023b9de0ebf`，不改变已验证的 Artifact Gate 结果。
 
 ### Verified Artifact Identity
 
