@@ -1,5 +1,5 @@
 services:
   app:
-    image: "gameexchange-runtime-test:${RUN_ID:?Set RUN_ID}"
+    image: "${RC_IMAGE:?Set RC_IMAGE}"
     ports:
       - "127.0.0.1:${APP_PORT:?Set APP_PORT}:8080"

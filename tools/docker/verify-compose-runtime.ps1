@@ -1,5 +1,8 @@
 [CmdletBinding()]
 param(
+    [AllowEmptyString()]
+    [string]$ImageName = "",
+
     [ValidateRange(30, 600)]
     [int]$TimeoutSeconds = 180
 )
@@ -12,7 +15,6 @@ $baseCompose = Join-Path $repoRoot "compose.yaml"
 $testOverride = Join-Path $PSScriptRoot "compose.runtime-test.yaml"
 $runId = "$(Get-Date -Format 'yyyyMMdd-HHmmss')-$(([Guid]::NewGuid().ToString('N')).Substring(0, 8))".ToLowerInvariant()
 $project = "gameexchange-rt-$runId"
-$imageName = "gameexchange-runtime-test:$runId"
 $volumeName = "${project}_mysql-data"
 $networkName = "${project}_backend"
 $sentinelUsername = "rtv_$(([Guid]::NewGuid().ToString('N')).Substring(0, 10))"
@@ -25,7 +27,7 @@ $composeArguments = @(
 )
 
 $environmentNames = @(
-    "RUN_ID",
+    "RC_IMAGE",
     "APP_PORT",
     "MYSQL_DATABASE",
     "MYSQL_USER",
@@ -43,6 +45,7 @@ foreach ($name in $environmentNames) {
 $script:dockerReady = $false
 $script:appContainerId = ""
 $script:mysqlContainerId = ""
+$script:expectedImageId = ""
 $script:failure = $null
 
 function Get-RandomPort {
@@ -164,6 +167,40 @@ function Get-ContainerHealth {
                 '--format={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}',
                 $ContainerId
             ) -Capture).Trim()
+}
+
+function Get-LocalImageId {
+    param([Parameter(Mandatory = $true)][string]$ImageReference)
+
+    $imageId = (Invoke-Docker -Arguments @(
+                "image", "inspect", '--format={{.Id}}', $ImageReference
+            ) -Capture).Trim()
+    Assert-True -Condition ($imageId -match '^sha256:[0-9a-f]{64}$') `
+        -Message "Specified image ID is invalid"
+    return $imageId
+}
+
+function Assert-ContainerImageIdentity {
+    param(
+        [Parameter(Mandatory = $true)][string]$ContainerId,
+        [Parameter(Mandatory = $true)][string]$EvidencePrefix
+    )
+
+    $configuredImage = (Invoke-Docker -Arguments @(
+                "inspect", '--format={{.Config.Image}}', $ContainerId
+            ) -Capture).Trim()
+    $containerImageId = (Invoke-Docker -Arguments @(
+                "inspect", '--format={{.Image}}', $ContainerId
+            ) -Capture).Trim()
+    Assert-Equal -Expected $script:ImageName -Actual $configuredImage `
+        -Message "Container image name does not match the specified RC image"
+    Assert-Equal -Expected $script:expectedImageId -Actual $containerImageId `
+        -Message "Container image ID does not match the specified RC image"
+    Write-Evidence -Name "$EvidencePrefix-image-identity.txt" -Value (
+        "imageName=$script:ImageName`n" +
+        "imageId=$script:expectedImageId`n" +
+        "containerImageId=$containerImageId`n" +
+        "container=$ContainerId")
 }
 
 function Assert-ProjectContainer {
@@ -438,7 +475,7 @@ function Save-Diagnostics {
             Write-Evidence -Name "$service-inspect.txt" -Value (
                 Invoke-Docker -Arguments @(
                     "inspect",
-                    '--format=state={{json .State}} user={{json .Config.User}} labels={{json .Config.Labels}} healthcheck={{json .Config.Healthcheck}}',
+                    '--format=state={{json .State}} imageName={{json .Config.Image}} imageId={{json .Image}} user={{json .Config.User}} labels={{json .Config.Labels}} healthcheck={{json .Config.Healthcheck}}',
                     $containerId
                 ) -Capture -AllowFailure)
         }
@@ -505,7 +542,7 @@ function Remove-TestProject {
 }
 
 $appPort = Get-RandomPort
-[Environment]::SetEnvironmentVariable("RUN_ID", $runId, "Process")
+[Environment]::SetEnvironmentVariable("RC_IMAGE", $ImageName, "Process")
 [Environment]::SetEnvironmentVariable(
     "APP_PORT", $appPort.ToString(), "Process")
 [Environment]::SetEnvironmentVariable(
@@ -522,6 +559,11 @@ $appPort = Get-RandomPort
 New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
 Push-Location $repoRoot
 try {
+    Assert-True -Condition (-not [string]::IsNullOrWhiteSpace($ImageName)) `
+        -Message "ImageName must identify an existing RC image"
+    Assert-True -Condition ($ImageName -ne "gameexchange:dev") `
+        -Message "Runtime verification must not use gameexchange:dev"
+
     $dockerVersion = Invoke-Docker -Arguments @("version") -Capture
     $composeVersion = Invoke-Docker -Arguments @(
         "compose", "version"
@@ -535,15 +577,17 @@ try {
     Assert-True -Condition ($platform -match '^linux/(amd64|x86_64)$') `
         -Message "Pinned images require a verified linux/amd64 Docker engine"
     $script:dockerReady = $true
+    $script:expectedImageId = Get-LocalImageId -ImageReference $ImageName
     Write-Evidence -Name "preflight.txt" -Value (
-        "$dockerVersion`n$composeVersion`n$buildxVersion`nplatform=$platform")
+        "$dockerVersion`n$composeVersion`n$buildxVersion`nplatform=$platform`n" +
+        "imageName=$ImageName`nimageId=$script:expectedImageId")
 
     Assert-CleanStart
     Invoke-Compose -Arguments @("config", "--quiet")
     $resolvedConfig = Invoke-Compose -Arguments @(
         "config", "--format", "json"
     ) -Capture | ConvertFrom-Json
-    Assert-Equal -Expected $imageName `
+    Assert-Equal -Expected $ImageName `
         -Actual $resolvedConfig.services.app.image `
         -Message "Runtime app image tag override was not applied"
     Assert-True -Condition (
@@ -557,7 +601,9 @@ try {
         -Message "Runtime app port override was not applied"
 
     Write-Host "Starting isolated project $project on port $appPort"
-    Invoke-Compose -Arguments @("up", "--detach", "--build")
+    Invoke-Compose -Arguments @(
+        "up", "--detach", "--no-build", "--pull", "never"
+    )
     $script:mysqlContainerId = Wait-ServiceHealthy -Service "mysql" `
         -Timeout $TimeoutSeconds
     $script:appContainerId = Wait-ServiceHealthy -Service "app" `
@@ -565,6 +611,8 @@ try {
     Assert-True -Condition (Test-VolumeExists -Name $volumeName) `
         -Message "Expected isolated MySQL volume was not created"
 
+    Assert-ContainerImageIdentity -ContainerId $script:appContainerId `
+        -EvidencePrefix "initial"
     Assert-InitialDatabaseState
     Assert-AppRuntime -ContainerId $script:appContainerId
     Invoke-HttpSmoke -Port $appPort -EvidencePrefix "initial"
@@ -608,11 +656,15 @@ try {
     Assert-Equal -Expected $project -Actual $volumeProject `
         -Message "Persisted volume project label mismatch"
 
-    Invoke-Compose -Arguments @("up", "--detach")
+    Invoke-Compose -Arguments @(
+        "up", "--detach", "--no-build", "--pull", "never"
+    )
     $script:mysqlContainerId = Wait-ServiceHealthy -Service "mysql" `
         -Timeout $TimeoutSeconds
     $script:appContainerId = Wait-ServiceHealthy -Service "app" `
         -Timeout $TimeoutSeconds
+    Assert-ContainerImageIdentity -ContainerId $script:appContainerId `
+        -EvidencePrefix "after-volume-reuse"
 
     Assert-Equal -Expected "1" -Actual (Invoke-MySqlScalar -Sql (
             "SELECT COUNT(*) FROM game_exchange.player " +
@@ -639,11 +691,17 @@ try {
 
     Save-Diagnostics
     Write-Evidence -Name "result.txt" -Value (
-        "status=PASS`nrunId=$runId`nproject=$project`nimage=$imageName`n" +
+        "status=PASS`nrunId=$runId`nproject=$project`nimage=$ImageName`n" +
+        "imageId=$script:expectedImageId`n" +
         "port=$appPort`nmysql=healthy`napp=healthy")
     Write-Host "Phase 5C.7F.1 runtime verification PASSED"
 } catch {
     $script:failure = $_
+    $failureReason = $_.Exception.Message.Replace("`r", " ").Replace(
+        "`n", " ")
+    Write-Evidence -Name "failure.txt" -Value (
+        "status=FAIL`nrunId=$runId`nproject=$project`n" +
+        "image=$ImageName`nreason=$failureReason")
     Write-Error -ErrorAction Continue (
         "Runtime verification failed: $($_.Exception.Message)")
     if ($script:dockerReady) {
