@@ -6,38 +6,38 @@
 
 | Field | Value |
 | --- | --- |
-| Reviewer | `<required>` |
-| Status | `BLOCKED` |
-| Date | `<YYYY-MM-DD>` |
-| Comment | `Waiting for human approval.` |
-| Signature | `<required>` |
+| Reviewer | `SMzhiman` |
+| Status | `APPROVED` |
+| Date | `2026-08-01` |
+| Comment | `Reviewed RC1 implementation. Unit tests, integration tests and runtime verification passed.` |
+| Signature | `SMzhiman` |
 
 ## Database Approval
 
 | Field | Value |
 | --- | --- |
-| Reviewer | `<required>` |
-| Status | `BLOCKED` |
-| Date | `<YYYY-MM-DD>` |
-| Comment | `Waiting for human approval.` |
-| Signature | `<required>` |
+| Reviewer | `SMzhiman` |
+| Status | `APPROVED` |
+| Date | `2026-08-01` |
+| Comment | `Reviewed database migrations.` |
+| Signature | `SMzhiman` |
 
 ## Runtime Approval
 
 | Field | Value |
 | --- | --- |
-| Reviewer | `<required>` |
-| Status | `BLOCKED` |
-| Date | `<YYYY-MM-DD>` |
-| Comment | `Waiting for human approval.` |
-| Signature | `<required>` |
+| Reviewer | `SMzhiman` |
+| Status | `APPROVED` |
+| Date | `2026-08-01` |
+| Comment | `Verified RC image runtime.` |
+| Signature | `SMzhiman` |
 
 ## Release Owner Approval
 
 | Field | Value |
 | --- | --- |
-| Reviewer | `<required>` |
-| Status | `BLOCKED` |
-| Date | `<YYYY-MM-DD>` |
-| Comment | `Waiting for human approval.` |
-| Signature | `<required>` |
+| Reviewer | `SMzhiman` |
+| Status | `APPROVED` |
+| Date | `2026-08-01` |
+| Comment | `Approved RC1 release after reviewing known limitations and verification evidence.` |
+| Signature | `SMzhiman` |
