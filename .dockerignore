@@ -1,0 +1,38 @@
+# 版本控制与本地开发环境
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.iml
+
+# 本地构建产物与缓存
+target/
+out/
+*.log
+
+# 当前镜像构建不需要的项目内容
+database/
+docs/
+tools/
+README.md
+CODE_REVIEW.md
+CHANGELOG.md
+deploy.bat
+mvnw.cmd
+
+# Docker 编排与本地运行配置
+docker-compose*.yml
+docker-compose*.yaml
+compose*.yml
+compose*.yaml
+.env
+.env.*
+*.local
+
+# 操作系统与编辑器临时文件
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+*~

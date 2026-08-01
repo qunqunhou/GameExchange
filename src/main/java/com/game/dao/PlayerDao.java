@@ -14,15 +14,13 @@ public class PlayerDao {
 
     //注册玩家
     public int addPlayer(Player player) {
-        String sql = "INSERT INTO player(username, password, gold, online_status) "
-                + "VALUES(?, ?, ?, ?)";
+        String sql = "INSERT INTO player(username, password, gold) VALUES(?, ?, ?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, player.getUsername());
             ps.setString(2, player.getPassword());
             ps.setLong(3, player.getGold());
-            ps.setInt(4, player.getOnlineStatus());
             return ps.executeUpdate();
 
         } catch (Exception e) {
@@ -33,7 +31,7 @@ public class PlayerDao {
 
     //根据用户名查询
     public Player findByUsername(String username) {
-        String sql = "SELECT id, username, password, gold, online_status "
+        String sql = "SELECT id, username, password, gold "
                 + "FROM player WHERE username = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -51,13 +49,14 @@ public class PlayerDao {
     }
 
     public Player findById(Connection conn, Integer id) throws Exception {
-        String sql = "SELECT id, username, password, gold, online_status "
+        String sql = "SELECT id, username, password, gold "
                 + "FROM player WHERE id = ?";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setInt(1, id);
-        try (ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return mapRow(rs);
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
             }
         }
         return null;
@@ -68,10 +67,11 @@ public class PlayerDao {
                           Long delta) throws Exception {
         // delta为正数增加金币，负数扣除金币
         String sql = "UPDATE player SET gold = gold + ? WHERE id = ?";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setLong(1, delta);
-        ps.setInt(2, playerId);
-        return ps.executeUpdate();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, delta);
+            ps.setInt(2, playerId);
+            return ps.executeUpdate();
+        }
     }
     private Player mapRow(ResultSet rs) throws Exception {
     Player player = new Player();
@@ -79,27 +79,12 @@ public class PlayerDao {
     player.setUsername(rs.getString("username"));
     player.setPassword(rs.getString("password"));
     player.setGold(rs.getLong("gold"));
-    player.setOnlineStatus(rs.getInt("online_status"));
     return player;
 }
 
-    // 更新在线状态
-    public int updateOnlineStatus(Integer playerId, Integer status) {
-        String sql = "UPDATE player SET online_status = ? WHERE id = ?";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, status);
-            ps.setInt(2, playerId);
-            return ps.executeUpdate();
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "更新玩家在线状态失败", e);
-        }
-        return 0;
-    }
-
     // 非事务版，自己管理连接
     public Player findById(Integer id) {
-        String sql = "SELECT id, username, password, gold, online_status "
+        String sql = "SELECT id, username, password, gold "
                 + "FROM player WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

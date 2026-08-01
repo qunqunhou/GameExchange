@@ -15,12 +15,13 @@ public class TradeRecordDao {
         String sql = "INSERT INTO trade_record(buyer_id, seller_id, item_id, price) "
                 + "VALUES(?, ?, ?, ?)";
         // trade_time 有 DEFAULT CURRENT_TIMESTAMP，不需要传值
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setInt(1, buyerId);
-        ps.setInt(2, sellerId);
-        ps.setInt(3, itemId);
-        ps.setLong(4, price);
-        return ps.executeUpdate();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, buyerId);
+            ps.setInt(2, sellerId);
+            ps.setInt(3, itemId);
+            ps.setLong(4, price);
+            return ps.executeUpdate();
+        }
     }
 }
 

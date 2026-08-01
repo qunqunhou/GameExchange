@@ -33,10 +33,11 @@ public class ItemDao {
                            Integer itemId,
                            Integer ownerId) throws Exception {
         String sql = "UPDATE item SET owner_id = ? WHERE id = ?";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setInt(1, ownerId);
-        ps.setInt(2, itemId);
-        return ps.executeUpdate();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, ownerId);
+            ps.setInt(2, itemId);
+            return ps.executeUpdate();
+        }
     }
     private Item mapRow(ResultSet rs) throws Exception {
         Item item = new Item();

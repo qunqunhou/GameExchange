@@ -22,6 +22,9 @@
 - **Phase 1.5 / Milestone 2**：新增 `vue/assets/js/app-config.js`，集中计算前端 `BASE_PATH` 并生成 API 地址。
 - **Phase 1.5 / Milestone 3**：新增 `mvnw`、`mvnw.cmd` 和 `.mvn/wrapper/maven-wrapper.properties`，通过 `only-script` 模式固定使用 Maven 3.9.16 并校验分发包 SHA-256。
 - **Phase 1.5 / Milestone 4**：新增 `SIMULATOR_ENABLED` 环境变量和 `simulator.enabled` JVM 系统属性，用于控制游戏模拟器启动。
+- **Phase 3A**：新增 `database/migrations/phase-3a-add-player-last-seen-at.sql`，用于为已有数据库增加玩家在线租约时间字段和查询索引。
+- **Phase 3B**：新增 `PresenceService` 与 `POST /presence/heartbeat`，由已登录 Session 中的玩家身份刷新在线租约。
+- **Phase 3C**：新增共享前端 Heartbeat 调度器，按 20 秒周期刷新租约，并在页面恢复可见时立即补发。
 
 ### 变更
 
@@ -33,10 +36,20 @@
 - **Phase 1.5 / Milestone 2**：五个前端页面移除固定 `/GameExchange_war` 的 `<base>` 和重复 `GE_API_BASE`，支持任意 WAR Context Path 及 ROOT 部署。
 - **Phase 1.5 / Milestone 3**：项目构建入口改为 Maven Wrapper，并为 Linux/macOS 的 `mvnw` 固定 LF 换行符。
 - **Phase 1.5 / Milestone 4**：游戏模拟器改为默认关闭，只有开关明确为 `true` 时监听器才会创建模拟器并访问数据库；无效配置按关闭处理。
+- **Phase 3A**：`player` 新环境基线增加可空 `last_seen_at` 字段与 `idx_player_last_seen_at` 索引；不回填历史数据，不修改现有 `online_status` 业务逻辑。
+- **Phase 3B**：登录、登出和 Session 销毁统一通过 `PresenceService` 更新租约，并继续维护 Legacy `online_status`；`/stats` 仍使用 Legacy 查询。
+- **Phase 3C**：登录成功后立即启动 Heartbeat；接口返回 401 时停止调度。前端不切换 `/stats` 读路径，也不改变 `online_status` 写入。
+- **Phase 3D**：`/stats` 同时计算 Legacy 与 60 秒 Lease 在线人数并记录差异；对外 `onlineCount` 仍返回 Legacy 结果，Lease 查询失败不影响原有响应。
+- **Phase 3E**：`/stats.onlineCount` 切换为 60 秒 Lease 查询；Legacy 查询仅用于 Shadow 对比，其异常不影响正式 Lease 响应，并继续保留 `online_status` 双写。
+- **Phase 3F**：应用停止写入 `online_status`；登录与 Heartbeat 只刷新 `last_seen_at`，登出与 Session 销毁只清理租约。Legacy 字段和 Shadow Verification 继续保留。
+- **Phase 4B.2**：Java Entity、DAO 和相关测试移除对 `online_status` 的运行时依赖；数据库字段暂保留。
+- **Database Constraint Repair**：新增独立 Migration，修复现有 MySQL Volume 中 `item.chk_item_rarity` 的字符集定义，并仅修复已确认的三条历史异常数据。
+- **Phase 4B.3**：更新 `CODE_REVIEW.md` 和本变更日志，明确当前 Presence 使用 `last_seen_at` + 60 秒 Lease；`online_status` 仅作为待 Phase 4C 清理的 Legacy 字段保留。
 
 ### 移除
 
 - **Milestone 1.3**：移除源码中的旧 `druid.properties`，避免继续把数据库凭据作为资源文件打包。
+- **Phase 4B.1**：移除 `/stats` 的 Legacy 在线人数查询与 Shadow Verification 日志；`onlineCount` 继续使用 60 秒 Lease 查询，API 返回结构不变。
 
 ### 安全
 

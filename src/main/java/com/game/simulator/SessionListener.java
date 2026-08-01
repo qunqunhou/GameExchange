@@ -1,7 +1,7 @@
 package com.game.simulator;
 
-import com.game.dao.PlayerDao;
 import com.game.entity.Player;
+import com.game.service.PresenceService;
 
 import javax.servlet.annotation.WebListener;
 import javax.servlet.http.*;
@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 public class SessionListener implements HttpSessionListener {
 
     private static final Logger LOGGER = Logger.getLogger(SessionListener.class.getName());
-    private final PlayerDao playerDao = new PlayerDao();
+    private final PresenceService presenceService = new PresenceService();
 
     @Override
     public void sessionCreated(HttpSessionEvent se) {
@@ -25,9 +25,13 @@ public class SessionListener implements HttpSessionListener {
         HttpSession session = se.getSession();
         Player player = (Player) session.getAttribute("player");
         if (player != null) {
-            playerDao.updateOnlineStatus(player.getId(), 0);
-            LOGGER.log(Level.INFO, "Session 销毁，玩家 {0} 自动下线",
-                    player.getUsername());
+            if (presenceService.markOffline(player.getId())) {
+                LOGGER.log(Level.INFO, "Session 销毁，玩家 {0} 自动下线",
+                        player.getUsername());
+            } else {
+                LOGGER.log(Level.WARNING, "Session 销毁时未能清理玩家 {0} 的在线状态",
+                        player.getUsername());
+            }
         }
     }
 }

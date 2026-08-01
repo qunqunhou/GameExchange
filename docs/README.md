@@ -9,6 +9,8 @@
 | [项目 README](../README.md) | 项目用途、环境要求、配置和运行方式 | 构建、配置或运行方式变化时 |
 | [代码审查报告](../CODE_REVIEW.md) | Milestone 1.1 的架构、数据库关系和技术债快照 | 保留审查结论，不覆盖为当前状态 |
 | [变更日志](../CHANGELOG.md) | 记录已经实施的工程升级和兼容性变化 | 每个 Milestone 或发布完成时 |
+| [Docker 验证记录](docker/VERIFY.md) | Phase 2B 的静态证据、动态验证计划和验收状态 | 每次完成新的 Docker 验证时 |
+| [Compose 验证记录](docker/COMPOSE_VERIFY.md) | Phase 2C 的静态配置和 Runtime Verification 证据 | 每次完成新的 Compose 验证时 |
 
 ## 文档职责
 
@@ -16,6 +18,8 @@
 - `CODE_REVIEW.md` 是指定时间点的审查报告，用于解释升级起点和技术债来源。
 - `CHANGELOG.md` 只记录已经发生的变化，不记录尚未批准或尚未实施的计划。
 - `docs/` 保存后续形成的架构、数据库、部署和运维专题文档。
+- `docs/docker/VERIFY.md` 区分已验证结果与待执行项目，不把静态检查记录为容器运行成功。
+- `docs/docker/COMPOSE_VERIFY.md` 在 Step 3 前保持 Runtime Pending，不把 `docker compose config` 记录为运行成功。
 
 ## 维护规则
 
@@ -31,7 +35,6 @@
 以下文档应在对应能力真正实施时建立，而不是在当前阶段提前编写：
 
 - 数据库基线或迁移文档：建立可版本化 DDL 后新增。
-- Docker 和 Docker Compose 文档：容器构建方案实施并验证后新增。
 - Kubernetes 文档：完成镜像、配置、健康检查和运行边界设计后新增。
 - 监控与告警文档：Prometheus、Grafana 指标和告警规则落地后新增。
 - CI/CD 文档：流水线实际运行并具备回滚方式后新增。

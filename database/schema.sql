@@ -2,6 +2,8 @@
 -- 目标版本：MySQL 8.4
 -- 本脚本只负责创建缺失的数据库对象，不删除或覆盖已有业务数据。
 
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
 CREATE DATABASE IF NOT EXISTS game_exchange
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_0900_ai_ci;
@@ -13,11 +15,11 @@ CREATE TABLE IF NOT EXISTS player (
     username VARCHAR(16) NOT NULL,
     password VARCHAR(255) NOT NULL,
     gold BIGINT NOT NULL DEFAULT 1000,
-    online_status TINYINT NOT NULL DEFAULT 0,
+    last_seen_at DATETIME NULL DEFAULT NULL,
     PRIMARY KEY (id),
     UNIQUE KEY uk_player_username (username),
-    CONSTRAINT chk_player_gold CHECK (gold >= 0),
-    CONSTRAINT chk_player_online_status CHECK (online_status IN (0, 1))
+    KEY idx_player_last_seen_at (last_seen_at),
+    CONSTRAINT chk_player_gold CHECK (gold >= 0)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
@@ -35,7 +37,36 @@ CREATE TABLE IF NOT EXISTS item (
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
     CONSTRAINT chk_item_rarity
-        CHECK (rarity IN ('普通', '稀有', '史诗', '传说'))
+        CHECK (rarity IN (
+            _utf8mb4'普通',
+            _utf8mb4'稀有',
+            _utf8mb4'史诗',
+            _utf8mb4'传说'
+        ))
+) ENGINE = InnoDB
+  DEFAULT CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS battle_record (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    player_id INT NOT NULL,
+    request_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    monster_name VARCHAR(32) NOT NULL,
+    gold_reward BIGINT NOT NULL,
+    loot_item_id INT NULL,
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_battle_record_player_request (player_id, request_id),
+    KEY idx_battle_record_player_created_at (player_id, created_at),
+    CONSTRAINT fk_battle_record_player
+        FOREIGN KEY (player_id) REFERENCES player (id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_battle_record_loot_item
+        FOREIGN KEY (loot_item_id) REFERENCES item (id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT chk_battle_record_gold_reward CHECK (gold_reward >= 0)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;

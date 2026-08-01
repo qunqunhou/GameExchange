@@ -3,6 +3,7 @@ package com.game.servlet;
 import com.game.dao.PlayerDao;
 import com.game.entity.Player;
 import com.alibaba.fastjson.JSONObject;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -12,6 +13,7 @@ import java.io.IOException;
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
 
+    private static final int BCRYPT_LOG_ROUNDS = 12;
     private final PlayerDao playerDao = new PlayerDao();
 
     @Override
@@ -57,9 +59,8 @@ public class RegisterServlet extends HttpServlet {
         // ✅ 创建新玩家，初始金币10000
         Player newPlayer = new Player();
         newPlayer.setUsername(username.trim());
-        newPlayer.setPassword(password);
+        newPlayer.setPassword(BCrypt.hashpw(password, BCrypt.gensalt(BCRYPT_LOG_ROUNDS)));
         newPlayer.setGold(10000L);
-        newPlayer.setOnlineStatus(0);
 
         int rows = playerDao.addPlayer(newPlayer);
 

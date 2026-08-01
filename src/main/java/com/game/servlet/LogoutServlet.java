@@ -1,7 +1,7 @@
 package com.game.servlet;
 
-import com.game.dao.PlayerDao;
 import com.game.entity.Player;
+import com.game.service.PresenceService;
 import com.alibaba.fastjson.JSONObject;
 
 import javax.servlet.ServletException;
@@ -12,7 +12,7 @@ import java.io.IOException;
 @WebServlet("/logout")
 public class LogoutServlet extends HttpServlet {
 
-    private final PlayerDao playerDao = new PlayerDao();
+    private final PresenceService presenceService = new PresenceService();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -25,7 +25,7 @@ public class LogoutServlet extends HttpServlet {
         if (session != null) {
             Player player = (Player) session.getAttribute("player");
             if (player != null) {
-                playerDao.updateOnlineStatus(player.getId(), 0);
+                presenceService.markOffline(player.getId());
             }
             session.invalidate(); // ✅ 销毁Session
         }

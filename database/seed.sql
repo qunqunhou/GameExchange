@@ -2,12 +2,14 @@
 -- 目标版本：MySQL 8.4
 -- 初始化卖家的密码由数据库随机生成，不提供固定登录凭据。
 
+SET NAMES utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
 USE game_exchange;
 
 START TRANSACTION;
 
-INSERT INTO player (username, password, gold, online_status)
-SELECT 'seed_seller', UUID(), 1000, 0
+INSERT INTO player (username, password, gold)
+SELECT 'seed_seller', UUID(), 1000
 WHERE NOT EXISTS (
     SELECT 1
     FROM player

@@ -105,11 +105,33 @@ public class DBUtil {
     }
 
     public static void close(Connection conn) {
-        if (conn != null) {
+        if (conn == null) {
+            return;
+        }
+
+        try {
+            if (!conn.getAutoCommit()) {
+                boolean rollbackSucceeded = false;
+                try {
+                    conn.rollback();
+                    rollbackSucceeded = true;
+                } catch (SQLException e) {
+                    LOGGER.log(Level.SEVERE, "回滚未完成事务失败", e);
+                }
+                if (rollbackSucceeded) {
+                    try {
+                        conn.setAutoCommit(true);
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "恢复数据库连接自动提交状态失败", e);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "检查数据库连接事务状态失败", e);
+        } finally {
             try {
-                conn.setAutoCommit(true);
                 conn.close();
-            } catch (Exception e) {
+            } catch (SQLException e) {
                 LOGGER.log(Level.SEVERE, "关闭数据库连接失败", e);
             }
         }

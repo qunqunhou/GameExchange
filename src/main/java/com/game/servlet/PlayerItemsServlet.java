@@ -52,17 +52,18 @@ public class PlayerItemsServlet extends HttpServlet {
                     + "    SELECT item_id FROM market WHERE status = 'ON_SALE' "
                     + ")";
 
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-
             ArrayList<Item> items = new ArrayList<>();
-            while (rs.next()) {
-                Item item = new Item();
-                item.setId(rs.getInt("id"));
-                item.setItemName(rs.getString("item_name"));
-                item.setRarity(rs.getString("rarity"));
-                items.add(item);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, playerId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Item item = new Item();
+                        item.setId(rs.getInt("id"));
+                        item.setItemName(rs.getString("item_name"));
+                        item.setRarity(rs.getString("rarity"));
+                        items.add(item);
+                    }
+                }
             }
 
             response.getWriter().write(gson.toJson(items));

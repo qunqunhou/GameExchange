@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="assets/js/app-config.js?v=20260723-0001"></script>
+    <script defer src="assets/js/presence-heartbeat.js?v=20260728-0001"></script>
     <title>登录账号 | Game Exchange</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
@@ -924,6 +925,9 @@
                             localStorage.setItem("playerId", res.data.id);
                             localStorage.setItem("username", res.data.username);
                             localStorage.setItem("gold", res.data.gold);
+                            if (window.GEPresenceHeartbeat) {
+                                window.GEPresenceHeartbeat.start();
+                            }
                             window.GEPageTransition ? window.GEPageTransition.go("dashboard.html") : location.href = "dashboard.html";
                         } else {
                             this.errorMsg = res.data.msg || "登录失败，请检查账号或密码";

@@ -5,7 +5,6 @@ public class Player {
     private String username;
     private String password;
     private Long gold;
-    private Integer onlineStatus;
 
     public Player(){}
 
@@ -41,20 +40,11 @@ public class Player {
         this.gold = gold;
     }
 
-    public Integer getOnlineStatus() {
-        return onlineStatus;
-    }
-
-    public void setOnlineStatus(Integer onlineStatus) {
-        this.onlineStatus = onlineStatus;
-    }
-
     @Override
     public String toString() {
         return "Player{id=" + id
                 + ", username='" + username + "'"
                 + ", gold=" + gold
-                + ", onlineStatus=" + onlineStatus
                 + "}";
     }
 }

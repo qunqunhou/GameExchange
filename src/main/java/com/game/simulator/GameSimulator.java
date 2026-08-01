@@ -102,10 +102,11 @@ public class GameSimulator {
 
                 // 更新金币
                 String updateGold = "UPDATE player SET gold = gold + ? WHERE id = ?";
-                PreparedStatement ps = conn.prepareStatement(updateGold);
-                ps.setLong(1, goldReward);
-                ps.setInt(2, playerId);
-                ps.executeUpdate();
+                try (PreparedStatement ps = conn.prepareStatement(updateGold)) {
+                    ps.setLong(1, goldReward);
+                    ps.setInt(2, playerId);
+                    ps.executeUpdate();
+                }
 
                 // 查玩家名
                 String playerName = getPlayerName(conn, playerId);
@@ -141,16 +142,18 @@ public class GameSimulator {
             conn = DBUtil.getConnection();
 
             String insertItem = "INSERT INTO item(item_name, rarity, owner_id) VALUES(?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(
-                    insertItem, PreparedStatement.RETURN_GENERATED_KEYS
-            );
-            ps.setString(1, itemName);
-            ps.setString(2, rarity);
-            ps.setInt(3, playerId);
-            ps.executeUpdate();
+            int newItemId;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    insertItem, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, itemName);
+                ps.setString(2, rarity);
+                ps.setInt(3, playerId);
+                ps.executeUpdate();
 
-            ResultSet rs = ps.getGeneratedKeys();
-            int newItemId = rs.next() ? rs.getInt(1) : -1;
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    newItemId = rs.next() ? rs.getInt(1) : -1;
+                }
+            }
 
             // 查玩家名
             String playerName = getPlayerName(conn, playerId);
@@ -185,11 +188,12 @@ public class GameSimulator {
             conn = DBUtil.getConnection();
             String sql = "INSERT INTO game_event(player_name, event_type, event_desc) "
                     + "VALUES(?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, playerName);
-            ps.setString(2, eventType);
-            ps.setString(3, eventDesc);
-            ps.executeUpdate();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, playerName);
+                ps.setString(2, eventType);
+                ps.setString(3, eventDesc);
+                ps.executeUpdate();
+            }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "写入游戏事件日志失败", e);
         } finally {
@@ -203,11 +207,12 @@ public class GameSimulator {
         try {
             String sql = "INSERT INTO game_event(player_name, event_type, event_desc) "
                     + "VALUES(?, ?, ?)";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, playerName);
-            ps.setString(2, eventType);
-            ps.setString(3, eventDesc);
-            ps.executeUpdate();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, playerName);
+                ps.setString(2, eventType);
+                ps.setString(3, eventDesc);
+                ps.executeUpdate();
+            }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "使用已有连接写入游戏事件日志失败", e);
         }
@@ -215,13 +220,12 @@ public class GameSimulator {
 
     // 根据playerId查玩家名
     private String getPlayerName(Connection conn, Integer playerId) {
-        try {
-            PreparedStatement ps = conn.prepareStatement(
-                    "SELECT username FROM player WHERE id = ?"
-            );
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT username FROM player WHERE id = ?")) {
             ps.setInt(1, playerId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getString("username");
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("username");
+            }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "查询玩家名称失败", e);
         }
@@ -234,13 +238,13 @@ public class GameSimulator {
         Connection conn = null;
         try {
             conn = DBUtil.getConnection();
-            PreparedStatement ps = conn.prepareStatement(
-                    "SELECT id FROM player LIMIT 10"
-            );
-            ResultSet rs = ps.executeQuery();
-            playerIds = new java.util.ArrayList<>();
-            while (rs.next()) {
-                playerIds.add(rs.getInt("id"));
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT id FROM player LIMIT 10");
+                 ResultSet rs = ps.executeQuery()) {
+                playerIds = new java.util.ArrayList<>();
+                while (rs.next()) {
+                    playerIds.add(rs.getInt("id"));
+                }
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "加载玩家 ID 列表失败", e);

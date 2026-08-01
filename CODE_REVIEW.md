@@ -4,6 +4,8 @@
 > 审查日期：2026-07-23  
 > 审查目标：建立工程基线，不新增功能、不优化 UI、不修改业务逻辑
 
+> 文档说明：本文前半部分保留 2026-07-23 的初始审查基线；后续 Phase 已验证的当前架构以“当前架构补充（Phase 4B.3）”为准。
+
 ## 1. 执行摘要
 
 GameExchange 是一个基于 Java 17、Servlet 4、Tomcat 9、MySQL 和 Maven WAR 的游戏虚拟物品交易项目。项目已经形成登录注册、战斗奖励、物品持有、市场挂售、购买交易和数据大屏等主要业务闭环，并采用了 Druid 连接池、`PreparedStatement`、数据库事务和行锁等基础工程手段。
@@ -16,7 +18,7 @@ GameExchange 是一个基于 Java 17、Servlet 4、Tomcat 9、MySQL 和 Maven WA
 - 缺少测试、统一日志、根目录忽略规则、README 和变更记录。
 - 存在明文密码、客户端可控制战斗奖励等高风险安全问题。
 - Servlet、Service、DAO 的分层执行不一致，异常和 JDBC 资源管理不统一。
-- Session、数据库在线状态、浏览器 `localStorage` 和后台线程会影响未来多容器部署。
+- Session、Presence Lease、浏览器 `localStorage` 和后台线程会影响未来多容器部署。
 
 **总体结论：先完成 Phase 1 工程整理，再设计安全整改、测试基线和 Docker。当前不建议直接用于生产环境，也不建议把现状原样封装进 Docker 镜像。**
 
@@ -159,8 +161,8 @@ flowchart LR
 | 方法 | 路径 | 实现 | 当前身份校验 | 数据访问 | 审查结论 |
 | --- | --- | --- | --- | --- | --- |
 | POST | `/register` | `RegisterServlet` | 无需登录 | `PlayerDao` | 参数有基础校验，但密码直接写入实体和数据库 |
-| POST | `/login` | `LoginServlet` | 用户名与密码 | `PlayerDao` | 明文比较密码，成功后写 Session 和在线状态 |
-| POST | `/logout` | `LogoutServlet` | 可选 Session | `PlayerDao` | 更新在线状态并销毁 Session |
+| POST | `/login` | `LoginServlet` | 用户名与密码 | `PlayerDao` + `PresenceService` | 明文比较密码，成功后写 Session 并刷新 `last_seen_at` Lease |
+| POST | `/logout` | `LogoutServlet` | 可选 Session | `PresenceService` | 清理 `last_seen_at` Lease 并销毁 Session |
 | GET | `/market/list` | `MarketServlet` | Session | `MarketDao` | 返回在售列表，使用 Gson |
 | GET | `/player/items` | `PlayerItemsServlet` | Session | 直接 JDBC | 身份来自 Session，资源关闭不完整 |
 | GET | `/player/info` | `PlayerInfoServlet` | 无 | `PlayerDao` | 信任查询参数中的 `playerId`，缺少身份绑定 |
@@ -185,10 +187,10 @@ flowchart LR
 1. 页面向 `/login` 提交用户名和密码。
 2. `PlayerDao.findByUsername` 查询包含密码的完整 `Player`。
 3. `LoginServlet` 直接比较字符串密码。
-4. 成功后把完整 `Player` 放入 Session，并把数据库 `online_status` 更新为 1。
+4. 成功后把完整 `Player` 放入 Session，并通过 `PresenceService` 刷新 `last_seen_at`；在线租约 TTL 为 60 秒。
 5. 前端同时把 `playerId`、`username`、`gold` 写入 `localStorage`。
 
-风险在于密码存储方式，以及 Session、数据库状态和浏览器状态形成三份状态源。浏览器数据可以过期或被修改，数据库在线状态也可能因进程异常退出而残留。
+风险在于密码存储方式，以及 Session、Lease 和浏览器状态之间的边界。`online_status` 仍保留在数据库中，但不再作为运行时在线事实来源。
 
 ### 7.2 挂售
 
@@ -237,7 +239,8 @@ erDiagram
         string username
         string password
         long gold
-        int online_status
+        datetime last_seen_at
+        int online_status "Legacy，仅保留"
     }
 
     ITEM {
@@ -327,7 +330,7 @@ erDiagram
 | TD-11 | P1 | DAO 捕获异常后返回 `null` 或 `0` | `PlayerDao`、`ItemDao`、`MarketDao` 多处 `printStackTrace` | “数据不存在”和“数据库故障”无法区分 | Milestone 1.4 先规范日志，后续统一异常模型 |
 | TD-12 | P1 | 多处 JDBC Statement/ResultSet 未关闭 | 事务型 DAO、`StatsServlet`、`PlayerItemsServlet`、`GameSimulator` | 连接池压力和长期资源泄漏 | 独立后端质量步骤 |
 | TD-13 | P1 | 挂售校验和插入不在同一事务 | `SellServlet:64-75`、`MarketDao.addMarket` | 并发下可能重复挂售或状态过期 | 独立交易一致性 Milestone |
-| TD-14 | P1 | Session、数据库在线状态、`localStorage` 三套状态源 | 登录、退出、Session Listener 及 4 个业务页面 | 异常退出和多副本下状态不一致 | Docker 前设计状态边界；暂不强行引入 Redis |
+| TD-14 | P1 | Session、Presence Lease、`localStorage` 三套状态边界 | 登录、退出、Heartbeat 及 4 个业务页面 | 多副本和异常退出时仍需统一会话与客户端状态策略 | 在线事实已统一为 `last_seen_at` Lease；Redis 仍不在当前范围 |
 | TD-15 | P1 | 每个应用副本都会创建模拟器线程池 | `SimulatorListener:15-19`、`GameSimulator:18-22` | 多容器会重复执行任务，增加关闭和伸缩风险 | Docker 前明确是否启用及单实例策略 |
 | TD-16 | P1 | 业务日志使用 `System.out` 和 `printStackTrace` | `DBUtil`、Simulator、Service、DAO、Servlet | 无级别、上下文、统一格式，难以采集检索 | Milestone 1.4 |
 | TD-17 | P2 | 应用上下文 `/GameExchange_war` 在页面和脚本中重复硬编码 | 5 个 HTML 第 5 行及各页 `GE_API_BASE` | WAR 改名或容器 Context 改变时页面失败 | Milestone 1.3 统一运行配置 |
@@ -382,7 +385,7 @@ erDiagram
 | Context Path | 固定 `/GameExchange_war` | WAR 改名或部署为 ROOT 时前端请求失败 | 统一上下文配置或固定部署约定 |
 | 日志 | `System.out`/堆栈散落 | 容器日志缺少级别和请求上下文 | Milestone 1.4 统一日志规范 |
 | Session | 进程内 Session | 多副本请求切换后会丢登录状态 | 首个 Docker Milestone 可先单实例；扩容前再评估粘性会话或 Redis |
-| 在线状态 | 数据库字段由登录/退出事件维护 | 容器被强制终止时可能残留在线状态 | 后续重新定义在线状态语义 |
+| 在线状态 | `last_seen_at` Lease；登录和 Heartbeat 刷新，登出和 Session 销毁清理 | 依赖租约 TTL，强制终止后最多保留 60 秒 | 当前正式方案；`online_status` 仅保留为 Legacy 字段 |
 | 模拟任务 | 每个 Web 应用实例创建线程池 | 每个容器都会重复创建和执行任务 | 容器化前明确启停配置与单实例执行策略 |
 | 部署 | root SSH + 删除旧 WAR | 无回滚、无制品校验、风险高 | Docker 稳定后再由 CI/CD 替代 |
 
@@ -506,6 +509,16 @@ erDiagram
 - `.idea/` 中的编译、编码、Maven 仓库、Web Context 和 WAR Artifact 配置
 - `target/` 中的 Maven 编译元数据和历史类文件
 - `out/artifacts/` 中的 IntelliJ IDEA WAR
+
+### 15.4 当前架构补充（Phase 4B.3）
+
+以下内容反映 Phase 3A～3F、Phase 4B.1 和 Phase 4B.2 完成后的当前状态，优先于本文早期审查基线中的在线状态描述：
+
+- **在线事实来源**：`player.last_seen_at` 是唯一 Presence 运行时写路径和 `/stats.onlineCount` 读取依据。
+- **Lease 规则**：登录成功和已登录 Heartbeat 刷新 `last_seen_at`；Lease TTL 为 60 秒。登出和 Session 销毁清理该租约。
+- **Stats**：`/stats.onlineCount` 使用 `last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 60 SECOND` 查询，Legacy 查询和 Shadow Verification 已移除。
+- **`online_status` 边界**：数据库字段仍保留，尚未进入 Phase 4C 的 schema 清理；Java Entity、DAO 和业务代码不再依赖或写入该字段。
+- **历史记录**：Phase 3A～3F 在 `CHANGELOG.md` 中保留为迁移过程记录，不代表当前运行时读写路径。
 
 ## 16. 参考规范
 

@@ -18,6 +18,8 @@ import java.util.logging.Logger;
 public class StatsServlet extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(StatsServlet.class.getName());
+    private static final String LEASE_ONLINE_COUNT_SQL = "SELECT COUNT(*) FROM player "
+            + "WHERE last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 60 SECOND";
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -34,8 +36,8 @@ public class StatsServlet extends HttpServlet {
         try {
             conn = DBUtil.getConnection();
 
-            // ✅ 数据一：当前在线人数
-            int onlineCount = getOnlineCount(conn);
+            // ✅ 数据一：Lease 在线人数（正式读路径）
+            int onlineCount = getLeaseOnlineCount(conn);
             result.put("onlineCount", onlineCount);
 
             // ✅ 数据二：今日掉落稀有装备 Top10
@@ -70,12 +72,11 @@ public class StatsServlet extends HttpServlet {
 
     }
 
-    // 当前在线人数
-    private int getOnlineCount(Connection conn) throws Exception {
-        String sql = "SELECT COUNT(*) FROM player WHERE online_status = 1";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-        return rs.next() ? rs.getInt(1) : 0;
+    private int getLeaseOnlineCount(Connection conn) throws Exception {
+        try (PreparedStatement ps = conn.prepareStatement(LEASE_ONLINE_COUNT_SQL);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
     }
 
     // 今日掉落稀有装备 Top10（稀有度不为"普通"的，按id倒序取最新10条）
@@ -86,17 +87,17 @@ public class StatsServlet extends HttpServlet {
                 + "WHERE i.rarity != '普通' "
                 + "ORDER BY i.id DESC "
                 + "LIMIT 10";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-
         JSONArray array = new JSONArray();
-        while (rs.next()) {
-            JSONObject item = new JSONObject();
-            item.put("id",       rs.getInt("id"));
-            item.put("itemName", rs.getString("item_name"));
-            item.put("rarity",   rs.getString("rarity"));
-            item.put("owner",    rs.getString("username"));
-            array.add(item);
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                JSONObject item = new JSONObject();
+                item.put("id",       rs.getInt("id"));
+                item.put("itemName", rs.getString("item_name"));
+                item.put("rarity",   rs.getString("rarity"));
+                item.put("owner",    rs.getString("username"));
+                array.add(item);
+            }
         }
         return array;
     }
@@ -104,26 +105,30 @@ public class StatsServlet extends HttpServlet {
     // 市场在售商品总数
     private int getOnSaleCount(Connection conn) throws Exception {
         String sql = "SELECT COUNT(*) FROM market WHERE status = 'ON_SALE'";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-        return rs.next() ? rs.getInt(1) : 0;
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
     }
 
     // 今日成交总额
     private long getTodayVolume(Connection conn) throws Exception {
         String sql = "SELECT COALESCE(SUM(price), 0) FROM trade_record "
-                + "WHERE DATE(trade_time) = CURDATE()";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-        return rs.next() ? rs.getLong(1) : 0;
+                + "WHERE trade_time >= CURDATE() "
+                + "AND trade_time < CURDATE() + INTERVAL 1 DAY";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getLong(1) : 0;
+        }
     }
 
     // 全服玩家总金币
     private long getTotalGold(Connection conn) throws Exception {
         String sql = "SELECT COALESCE(SUM(gold), 0) FROM player";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-        return rs.next() ? rs.getLong(1) : 0;
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getLong(1) : 0;
+        }
     }
 
     // 最新20条游戏事件
@@ -132,17 +137,17 @@ public class StatsServlet extends HttpServlet {
                 + "FROM game_event "
                 + "ORDER BY id DESC "
                 + "LIMIT 20";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-
         JSONArray array = new JSONArray();
-        while (rs.next()) {
-            JSONObject event = new JSONObject();
-            event.put("playerName", rs.getString("player_name"));
-            event.put("eventType",  rs.getString("event_type"));
-            event.put("eventDesc",  rs.getString("event_desc"));
-            event.put("createTime", rs.getString("create_time"));
-            array.add(event);
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                JSONObject event = new JSONObject();
+                event.put("playerName", rs.getString("player_name"));
+                event.put("eventType",  rs.getString("event_type"));
+                event.put("eventDesc",  rs.getString("event_desc"));
+                event.put("createTime", rs.getString("create_time"));
+                array.add(event);
+            }
         }
         return array;
     }
