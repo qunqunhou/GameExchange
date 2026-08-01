@@ -6,8 +6,10 @@
 | --- | --- |
 | `BLOCKED` | Gate 未执行、执行失败、结果不匹配、证据缺失或风险尚未批准。禁止发布。 |
 | `PASSED` | Gate 的命令成功、验收条件全部满足、证据已保存并完成 Review。 |
+| `APPROVED` | 人工 Approval 已由 Reviewer 审核并签署。 |
+| `ACCEPTED` | Known Limitation 已由 Risk Owner 接受，不阻塞当前 RC 发布。 |
 
-所有 Gate 初始状态均为 `BLOCKED`。只有所有 Required Gate 和 Approval 均为 `PASSED` 时，RC 总状态才能标记为 `PASSED`。不得根据历史结果、口头确认或部分成功推断通过。
+所有 Gate 初始状态均为 `BLOCKED`。只有所有 Required Gate 为 `PASSED`、所有 Approval 为 `APPROVED`、所有 Known Limitation 为 `ACCEPTED` 且 Git Tag 条件满足时，RC 总状态才能标记为 `PASSED`。不得根据历史结果、口头确认或部分成功推断通过。
 
 ## Release Record
 
@@ -111,26 +113,38 @@ Maven build command：
 
 ## 7. Known Limitations
 
-Known Limitation 只有在影响、处置方式和责任人明确并完成风险批准后才能标记为 `PASSED`。
+Known Limitation 的 Verification Status 记录验证覆盖状态，Risk Acceptance 记录 RC1 发布决策。`ACCEPTED` 表示 Risk Owner 接受该限制，且该限制不阻塞 RC1；它不表示对应能力已经完成验证。
 
-| ID | Uncovered Area | Risk | Mitigation / Acceptance Owner | Status |
+| ID | Uncovered Area | Risk | Risk Acceptance Reference | Verification Status |
 | --- | --- | --- | --- | --- |
-| KL-01 | 未验证生产 TLS 配置 | 本地 HTTP 验证不能证明生产传输链路安全 | `Waiting for risk acceptance owner.` | `BLOCKED` |
-| KL-02 | 未验证外部 Secret 管理 | 当前验证不能证明生产凭据的分发、轮换和撤销流程 | `Waiting for risk acceptance owner.` | `BLOCKED` |
-| KL-03 | 未验证高可用部署 | 单实例通过不能证明节点故障时的服务连续性 | `Waiting for risk acceptance owner.` | `BLOCKED` |
-| KL-04 | 未验证备份恢复流程 | 当前验证不能证明数据可在故障后按目标恢复 | `Waiting for risk acceptance owner.` | `BLOCKED` |
-| KL-05 | 未执行真实生产流量测试 | 隔离 Runtime 结果不能代表生产负载下的容量与稳定性 | `Waiting for risk acceptance owner.` | `BLOCKED` |
-| KL-06 | 浏览器 UI 端到端流程未实现完整自动化 | 前端资源加载或交互回归可能未被 API 测试发现 | `Waiting for risk acceptance owner.` | `BLOCKED` |
-| KL-07 | Release Gate 尚未接入 CI | 手工执行可能受到主机状态和操作差异影响 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-01 | 未验证生产 TLS 配置 | 本地 HTTP 验证不能证明生产传输链路安全 | `See Risk Acceptance record below.` | `BLOCKED` |
+| KL-02 | 未验证外部 Secret 管理 | 当前验证不能证明生产凭据的分发、轮换和撤销流程 | `See Risk Acceptance record below.` | `BLOCKED` |
+| KL-03 | 未验证高可用部署 | 单实例通过不能证明节点故障时的服务连续性 | `See Risk Acceptance record below.` | `BLOCKED` |
+| KL-04 | 未验证备份恢复流程 | 当前验证不能证明数据可在故障后按目标恢复 | `See Risk Acceptance record below.` | `BLOCKED` |
+| KL-05 | 未执行真实生产流量测试 | 隔离 Runtime 结果不能代表生产负载下的容量与稳定性 | `See Risk Acceptance record below.` | `BLOCKED` |
+| KL-06 | 浏览器 UI 端到端流程未实现完整自动化 | 前端资源加载或交互回归可能未被 API 测试发现 | `See Risk Acceptance record below.` | `BLOCKED` |
+| KL-07 | Release Gate 尚未接入 CI | 手工执行可能受到主机状态和操作差异影响 | `See Risk Acceptance record below.` | `BLOCKED` |
+
+### Risk Acceptance
+
+| ID | Risk Owner | Acceptance Status | Acceptance Date | Acceptance Comment |
+| --- | --- | --- | --- | --- |
+| KL-01 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
+| KL-02 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
+| KL-03 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
+| KL-04 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
+| KL-05 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
+| KL-06 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
+| KL-07 | `SMzhiman` | `ACCEPTED` | `2026-08-01` | `Accepted for RC1 release. Limitation is documented and excluded from current release verification scope.` |
 
 ## 8. Approval
 
-| Approval | Reviewer | Date | Status | Evidence / Comment |
-| --- | --- | --- | --- | --- |
-| Technical Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
-| Database Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
-| Runtime Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
-| Release Owner Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
+| Approval | Reviewer | Date | Status | Evidence / Comment | Signature |
+| --- | --- | --- | --- | --- | --- |
+| Technical Approval | `SMzhiman` | `2026-08-01` | `APPROVED` | `Reviewed RC1 implementation. Unit tests, integration tests and runtime verification passed.` | `SMzhiman` |
+| Database Approval | `SMzhiman` | `2026-08-01` | `APPROVED` | `Reviewed database migrations.` | `SMzhiman` |
+| Runtime Approval | `SMzhiman` | `2026-08-01` | `APPROVED` | `Verified RC image runtime.` | `SMzhiman` |
+| Release Owner Approval | `SMzhiman` | `2026-08-01` | `APPROVED` | `Approved RC1 release after reviewing known limitations and verification evidence.` | `SMzhiman` |
 
 ## Final Decision
 
@@ -143,4 +157,4 @@ Known Limitation 只有在影响、处置方式和责任人明确并完成风险
 | Release Approver | `<required>` |
 | Approval Date | `<required: YYYY-MM-DD>` |
 
-`Final Status` 只能在本清单所有 Required Gate、Known Limitation 风险接受和 Approval 均为 `PASSED` 后改为 `PASSED`。
+`Final Status` 只能在所有 Required Gate 为 `PASSED`、所有 Approval 为 `APPROVED`、所有 Known Limitation 为 `ACCEPTED` 且 Git Tag 条件满足后改为 `PASSED`。
