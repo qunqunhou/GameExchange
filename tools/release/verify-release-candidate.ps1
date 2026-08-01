@@ -28,7 +28,7 @@ $mavenWrapper = Join-Path $repoRoot "mvnw.cmd"
 $startedAt = (Get-Date).ToString("o")
 
 $script:currentGate = "Initialization"
-$script:releaseVersion = ""
+$script:validatedReleaseVersion = ""
 $script:commitHash = ""
 $script:branch = ""
 $script:warPath = ""
@@ -332,7 +332,7 @@ function Write-GateSummary {
         "startedAt=$script:startedAt`n" +
         "finishedAt=$finishedAt`n" +
         "gate=$script:currentGate`n" +
-        "releaseVersion=$script:releaseVersion`n" +
+        "releaseVersion=$script:validatedReleaseVersion`n" +
         "commit=$script:commitHash`n" +
         "branch=$script:branch`n" +
         "war=$script:warPath`n" +
@@ -395,9 +395,9 @@ try {
         throw ("ReleaseVersion does not match pom.xml: " +
                 "expected=$ReleaseVersion actual=$($mavenProject.Version)")
     }
-    $script:releaseVersion = $ReleaseVersion
+    $script:validatedReleaseVersion = $ReleaseVersion
     Write-Evidence -Name "release-version.txt" -Value (
-        "releaseVersion=$script:releaseVersion`n" +
+        "releaseVersion=$script:validatedReleaseVersion`n" +
         "mavenArtifactId=$($mavenProject.ArtifactId)`n" +
         "mavenVersion=$($mavenProject.Version)")
 
@@ -448,7 +448,7 @@ try {
     $script:currentGate = "Docker Image Build"
     $commitPrefix = $script:commitHash.Substring(0, 12)
     $script:imageName = (
-        "gameexchange-rc:$script:releaseVersion-$commitPrefix-$runId")
+        "gameexchange-rc:$script:validatedReleaseVersion-$commitPrefix-$runId")
     Invoke-LoggedCommand -FilePath "docker" -Arguments @(
         "build",
         "--file", (Join-Path $repoRoot "Dockerfile"),
@@ -516,7 +516,7 @@ try {
             "-NoProfile",
             "-ExecutionPolicy", "Bypass",
             "-File", $manifestScript,
-            "-ReleaseVersion", $script:releaseVersion,
+            "-ReleaseVersion", $script:validatedReleaseVersion,
             "-ImageName", $script:imageName
         ) -LogName "artifact-manifest.log"
     $manifestMatches = [regex]::Matches(
@@ -538,13 +538,13 @@ try {
     if ($manifest.status -ne "complete") {
         throw "Artifact Manifest status is not complete: $($manifest.status)"
     }
-    if ($manifest.release.version -ne $script:releaseVersion -or
+    if ($manifest.release.version -ne $script:validatedReleaseVersion -or
         $manifest.release.artifactIdentity.mavenVersion -ne
-            $script:releaseVersion -or
+            $script:validatedReleaseVersion -or
         $manifest.release.artifactIdentity.warVersion -ne
-            $script:releaseVersion -or
+            $script:validatedReleaseVersion -or
         $manifest.release.artifactIdentity.dockerImageVersion -ne
-            $script:releaseVersion) {
+            $script:validatedReleaseVersion) {
         throw "Artifact Manifest release identity does not match the release"
     }
     if ($manifest.git.commitHash -ne $script:commitHash -or
@@ -581,7 +581,7 @@ try {
         -Path $manifestPath
     Write-Evidence -Name "artifact-manifest-evidence.txt" -Value (
         "path=$script:manifestEvidence`nstatus=complete`n" +
-        "releaseVersion=$script:releaseVersion`n" +
+        "releaseVersion=$script:validatedReleaseVersion`n" +
         "commit=$script:commitHash`nwarSha256=$script:warSha256`n" +
         "imageName=$script:imageName`nimageId=$script:imageId`n" +
         "imageDigest=$script:imageDigest`n" +
