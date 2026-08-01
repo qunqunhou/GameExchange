@@ -15,12 +15,14 @@
 
 | Field | Value |
 | --- | --- |
-| Overall Status | `BLOCKED` |
+| Overall Status | `PASSED` |
 | RC Gate Status | `PASSED` |
 | RC Version | `1.0.0-rc1` |
 | Git Commit (Artifact) | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
 | Documentation Commit | `f3d1534fe579ba9e38d27bbead57a023b9de0ebf` |
-| Git Tag | `BLOCKED - not created` |
+| Git Tag | `v1.0.0-rc1` |
+| Tag Target Commit | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
+| Tag Type | `annotated tag` |
 | Verification Date | `2026-08-01` |
 | Release Gate Evidence | `target/release-gate/20260801-194735-296-859df335/` |
 | Docker Runtime Evidence | `target/docker-runtime/20260801-195124-baecc6d3/` |
@@ -54,7 +56,7 @@ Artifact Identity 来源于 commit `6cc2c88dd01bd6aea29f4e58d591031e6275079e`。
 | --- | --- | --- | --- |
 | Version | 版本唯一、不是 `SNAPSHOT`，并与 Maven、WAR 和 Image 版本一致 | RC Version 与 Artifact Manifest 均记录 `1.0.0-rc1` | `PASSED` |
 | Git Commit | 记录完整 commit hash，且所有验证均基于该 commit | `target/release-gate/20260801-194735-296-859df335/git-identity.txt` | `PASSED` |
-| Git Tag | Tag 唯一，并精确指向已记录的 Git Commit | 本阶段未创建 Tag | `BLOCKED` |
+| Git Tag | Tag 唯一，并精确指向已记录的 Git Commit | Annotated tag `v1.0.0-rc1` 指向 `6cc2c88dd01bd6aea29f4e58d591031e6275079e` | `PASSED` |
 | Working Tree Status | `git status --porcelain` 无输出，无未跟踪或未提交文件 | `target/release-gate/20260801-194735-296-859df335/git-status.txt` | `PASSED` |
 
 ## 2. Build Verification
@@ -150,11 +152,11 @@ Known Limitation 的 Verification Status 记录验证覆盖状态，Risk Accepta
 
 | Field | Value |
 | --- | --- |
-| Final Status | `BLOCKED` |
-| Approved Version | `<required>` |
-| Approved Commit | `<required>` |
-| Approved Image Digest | `<required>` |
-| Release Approver | `<required>` |
-| Approval Date | `<required: YYYY-MM-DD>` |
+| Final Status | `PASSED` |
+| Approved Version | `1.0.0-rc1` |
+| Approved Commit | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
+| Approved Image Digest | `sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2` |
+| Release Approver | `SMzhiman` |
+| Approval Date | `2026-08-01` |
 
 `Final Status` 只能在所有 Required Gate 为 `PASSED`、所有 Approval 为 `APPROVED`、所有 Known Limitation 为 `ACCEPTED` 且 Git Tag 条件满足后改为 `PASSED`。
