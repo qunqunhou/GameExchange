@@ -152,7 +152,7 @@ Linux 或 macOS 执行：
 默认生成：
 
 ```text
-target/GameExchange_war-1.0-SNAPSHOT.war
+target/GameExchange_war-1.0.0-rc1.war
 ```
 
 前端通过 `vue/assets/js/app-config.js` 根据当前页面地址计算 `BASE_PATH`，静态资源使用相对路径，API 统一通过 `window.GE_API()` 生成。因此 WAR 可以使用其他名称，也可以部署为 `ROOT.war`，不需要修改 HTML。
@@ -232,7 +232,7 @@ Dockerfile 的 JDK builder、Tomcat runtime 和 Compose 的 MySQL 镜像均使�
 以下命令假设已经设置 `CATALINA_HOME`，并且数据库环境变量能够传递给 Tomcat：
 
 ```powershell
-Copy-Item ".\target\GameExchange_war-1.0-SNAPSHOT.war" `
+Copy-Item ".\target\GameExchange_war-1.0.0-rc1.war" `
   "$env:CATALINA_HOME\webapps\GameExchange_war.war" -Force
 
 & "$env:CATALINA_HOME\bin\startup.bat"

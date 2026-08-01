@@ -1,5 +1,8 @@
 [CmdletBinding()]
 param(
+    [AllowEmptyString()]
+    [string]$ReleaseVersion = "",
+
     [string]$ImageName = ""
 )
 
@@ -95,6 +98,30 @@ function Get-RelativeRepositoryPath {
         throw "Path is outside repository: $fullPath"
     }
     return $fullPath.Substring($prefix.Length).Replace('\', '/')
+}
+
+function Get-MavenProjectIdentity {
+    $pomPath = Join-Path $script:repoRoot "pom.xml"
+    try {
+        [xml]$pom = Get-Content -Raw -LiteralPath $pomPath
+        $namespace = [System.Xml.XmlNamespaceManager]::new($pom.NameTable)
+        $namespace.AddNamespace("m", $pom.DocumentElement.NamespaceURI)
+        $artifactIdNode = $pom.SelectSingleNode(
+            "/m:project/m:artifactId", $namespace)
+        $versionNode = $pom.SelectSingleNode(
+            "/m:project/m:version", $namespace)
+    } catch {
+        throw "Could not read Maven project identity from pom.xml"
+    }
+    if ($null -eq $artifactIdNode -or $null -eq $versionNode -or
+        [string]::IsNullOrWhiteSpace($artifactIdNode.InnerText) -or
+        [string]::IsNullOrWhiteSpace($versionNode.InnerText)) {
+        throw "Maven artifactId or version is missing from pom.xml"
+    }
+    return [pscustomobject]@{
+        ArtifactId = $artifactIdNode.InnerText.Trim()
+        Version = $versionNode.InnerText.Trim()
+    }
 }
 
 function Get-GitIdentity {
@@ -404,6 +431,23 @@ function Get-MigrationIdentity {
     }
 }
 
+if ([string]::IsNullOrWhiteSpace($ReleaseVersion) -or
+    $ReleaseVersion -notmatch
+        '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
+    throw "ReleaseVersion must be a Docker-safe semantic version"
+}
+$mavenProject = Get-MavenProjectIdentity
+if ($mavenProject.Version -ne $ReleaseVersion) {
+    throw ("ReleaseVersion does not match pom.xml: " +
+            "expected=$ReleaseVersion actual=$($mavenProject.Version)")
+}
+if (-not [string]::IsNullOrWhiteSpace($ImageName) -and
+    -not $ImageName.StartsWith(
+        "gameexchange-rc:$ReleaseVersion-",
+        [System.StringComparison]::Ordinal)) {
+    throw "Docker image name does not contain the release version"
+}
+
 if (Test-Path -LiteralPath $outputDirectory) {
     throw "Release manifest directory already exists: $outputDirectory"
 }
@@ -413,13 +457,37 @@ Push-Location $repoRoot
 try {
     $gitIdentity = Get-GitIdentity
     $buildIdentity = Get-BuildIdentity
+    $warVersion = $null
+    if ($buildIdentity.war.status -eq "available") {
+        $expectedWarName = "$($mavenProject.ArtifactId)-$ReleaseVersion.war"
+        $actualWarName = Split-Path -Leaf $buildIdentity.war.path
+        if ($actualWarName -ne $expectedWarName) {
+            throw ("WAR version does not match the release: " +
+                    "expected=$expectedWarName actual=$actualWarName")
+        }
+        $warVersion = $ReleaseVersion
+    }
     $dockerContext = Get-LocalDockerContext
     $dockerEnvironment = Get-DockerEnvironment -DockerContext $dockerContext
     $dockerImage = Get-DockerImageIdentity `
         -DockerContext $dockerContext -RequestedImage $ImageName
+    $dockerImageVersion = if ($dockerImage.status -eq "available") {
+        $ReleaseVersion
+    } else {
+        $null
+    }
     $migrationIdentity = Get-MigrationIdentity
 
+    $releaseStatus = if ($mavenProject.Version -eq $ReleaseVersion -and
+        $warVersion -eq $ReleaseVersion -and
+        $dockerImageVersion -eq $ReleaseVersion) {
+        "available"
+    } else {
+        "partial"
+    }
+
     $sectionStatuses = @(
+        $releaseStatus,
         $gitIdentity.status,
         $buildIdentity.status,
         $dockerImage.status,
@@ -436,10 +504,18 @@ try {
     }
 
     $manifest = [ordered]@{
-        schemaVersion = "1.0"
+        schemaVersion = "1.1"
         runId = $runId
         generatedAt = (Get-Date).ToString("o")
         status = $manifestStatus
+        release = [ordered]@{
+            version = $ReleaseVersion
+            artifactIdentity = [ordered]@{
+                mavenVersion = $mavenProject.Version
+                warVersion = $warVersion
+                dockerImageVersion = $dockerImageVersion
+            }
+        }
         git = $gitIdentity
         build = $buildIdentity
         docker = $dockerImage

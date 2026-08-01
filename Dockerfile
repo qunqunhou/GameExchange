@@ -16,7 +16,7 @@ COPY src/ src/
 
 RUN --mount=type=cache,target=/root/.m2,sharing=locked \
     ./mvnw --batch-mode --no-transfer-progress clean package && \
-    test -f target/GameExchange_war-1.0-SNAPSHOT.war
+    test -f target/GameExchange_war-1.0.0-rc1.war
 
 FROM tomcat:9.0.120-jre17-temurin-noble@sha256:c8963563a89328eff74e48ff01c5ac774672e6ffefd5c96decdf8d0718ca87be AS runtime
 
@@ -32,7 +32,7 @@ RUN groupadd --gid 10001 gameexchange && \
     rm -rf webapps/*
 
 COPY --from=builder --chown=gameexchange:gameexchange \
-    /workspace/target/GameExchange_war-1.0-SNAPSHOT.war \
+    /workspace/target/GameExchange_war-1.0.0-rc1.war \
     webapps/ROOT.war
 
 RUN mkdir -p conf/Catalina/localhost && \

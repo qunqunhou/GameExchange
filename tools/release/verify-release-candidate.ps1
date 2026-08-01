@@ -1,5 +1,8 @@
 [CmdletBinding()]
 param(
+    [AllowEmptyString()]
+    [string]$ReleaseVersion = "",
+
     [ValidateRange(30, 600)]
     [int]$DockerTimeoutSeconds = 180
 )
@@ -25,6 +28,7 @@ $mavenWrapper = Join-Path $repoRoot "mvnw.cmd"
 $startedAt = (Get-Date).ToString("o")
 
 $script:currentGate = "Initialization"
+$script:releaseVersion = ""
 $script:commitHash = ""
 $script:branch = ""
 $script:warPath = ""
@@ -216,6 +220,30 @@ function Get-RelativeRepositoryPath {
     return $fullPath.Substring($prefix.Length).Replace('\', '/')
 }
 
+function Get-MavenProjectIdentity {
+    $pomPath = Join-Path $script:repoRoot "pom.xml"
+    try {
+        [xml]$pom = Get-Content -Raw -LiteralPath $pomPath
+        $namespace = [System.Xml.XmlNamespaceManager]::new($pom.NameTable)
+        $namespace.AddNamespace("m", $pom.DocumentElement.NamespaceURI)
+        $artifactIdNode = $pom.SelectSingleNode(
+            "/m:project/m:artifactId", $namespace)
+        $versionNode = $pom.SelectSingleNode(
+            "/m:project/m:version", $namespace)
+    } catch {
+        throw "Could not read Maven project identity from pom.xml"
+    }
+    if ($null -eq $artifactIdNode -or $null -eq $versionNode -or
+        [string]::IsNullOrWhiteSpace($artifactIdNode.InnerText) -or
+        [string]::IsNullOrWhiteSpace($versionNode.InnerText)) {
+        throw "Maven artifactId or version is missing from pom.xml"
+    }
+    return [pscustomobject]@{
+        ArtifactId = $artifactIdNode.InnerText.Trim()
+        Version = $versionNode.InnerText.Trim()
+    }
+}
+
 function Get-DockerImageIdentity {
     param([Parameter(Mandatory = $true)][string]$ImageName)
 
@@ -304,6 +332,7 @@ function Write-GateSummary {
         "startedAt=$script:startedAt`n" +
         "finishedAt=$finishedAt`n" +
         "gate=$script:currentGate`n" +
+        "releaseVersion=$script:releaseVersion`n" +
         "commit=$script:commitHash`n" +
         "branch=$script:branch`n" +
         "war=$script:warPath`n" +
@@ -355,6 +384,23 @@ try {
     Write-Evidence -Name "git-identity.txt" -Value (
         "commit=$script:commitHash`nbranch=$script:branch`nworkingTree=clean")
 
+    $script:currentGate = "Release Version Check"
+    if ([string]::IsNullOrWhiteSpace($ReleaseVersion) -or
+        $ReleaseVersion -notmatch
+            '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z][0-9A-Za-z.-]*)?$') {
+        throw "ReleaseVersion must be a Docker-safe semantic version"
+    }
+    $mavenProject = Get-MavenProjectIdentity
+    if ($mavenProject.Version -ne $ReleaseVersion) {
+        throw ("ReleaseVersion does not match pom.xml: " +
+                "expected=$ReleaseVersion actual=$($mavenProject.Version)")
+    }
+    $script:releaseVersion = $ReleaseVersion
+    Write-Evidence -Name "release-version.txt" -Value (
+        "releaseVersion=$script:releaseVersion`n" +
+        "mavenArtifactId=$($mavenProject.ArtifactId)`n" +
+        "mavenVersion=$($mavenProject.Version)")
+
     $script:currentGate = "Environment Check"
     if (-not (Test-Path -LiteralPath $mavenWrapper -PathType Leaf)) {
         throw "Maven Wrapper is missing: $mavenWrapper"
@@ -401,7 +447,8 @@ try {
 
     $script:currentGate = "Docker Image Build"
     $commitPrefix = $script:commitHash.Substring(0, 12)
-    $script:imageName = "gameexchange-rc:$commitPrefix-$runId"
+    $script:imageName = (
+        "gameexchange-rc:$script:releaseVersion-$commitPrefix-$runId")
     Invoke-LoggedCommand -FilePath "docker" -Arguments @(
         "build",
         "--file", (Join-Path $repoRoot "Dockerfile"),
@@ -469,6 +516,7 @@ try {
             "-NoProfile",
             "-ExecutionPolicy", "Bypass",
             "-File", $manifestScript,
+            "-ReleaseVersion", $script:releaseVersion,
             "-ImageName", $script:imageName
         ) -LogName "artifact-manifest.log"
     $manifestMatches = [regex]::Matches(
@@ -489,6 +537,15 @@ try {
     }
     if ($manifest.status -ne "complete") {
         throw "Artifact Manifest status is not complete: $($manifest.status)"
+    }
+    if ($manifest.release.version -ne $script:releaseVersion -or
+        $manifest.release.artifactIdentity.mavenVersion -ne
+            $script:releaseVersion -or
+        $manifest.release.artifactIdentity.warVersion -ne
+            $script:releaseVersion -or
+        $manifest.release.artifactIdentity.dockerImageVersion -ne
+            $script:releaseVersion) {
+        throw "Artifact Manifest release identity does not match the release"
     }
     if ($manifest.git.commitHash -ne $script:commitHash -or
         $manifest.git.workingTreeStatus -ne "clean") {
@@ -524,6 +581,7 @@ try {
         -Path $manifestPath
     Write-Evidence -Name "artifact-manifest-evidence.txt" -Value (
         "path=$script:manifestEvidence`nstatus=complete`n" +
+        "releaseVersion=$script:releaseVersion`n" +
         "commit=$script:commitHash`nwarSha256=$script:warSha256`n" +
         "imageName=$script:imageName`nimageId=$script:imageId`n" +
         "imageDigest=$script:imageDigest`n" +
