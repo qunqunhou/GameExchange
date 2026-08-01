@@ -16,31 +16,41 @@
 | Overall Status | `BLOCKED` |
 | RC Gate Status | `PASSED` |
 | RC Version | `1.0.0-rc1` |
-| Git Commit | `153ca9ad0345d71c8a050e398d5eb32a96e371cd` |
+| Git Commit | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
 | Git Tag | `BLOCKED - not created` |
 | Verification Date | `2026-08-01` |
-| Release Gate Evidence | `target/release-gate/20260801-184550-076-d0d614fb/` |
-| Docker Runtime Evidence | `target/docker-runtime/20260801-184954-a8d138fc/` |
-| Artifact Manifest | `target/release-manifest/20260801-185047-907-957c30b4/release-manifest.json` |
+| Release Gate Evidence | `target/release-gate/20260801-194735-296-859df335/` |
+| Docker Runtime Evidence | `target/docker-runtime/20260801-195124-baecc6d3/` |
+| Artifact Manifest | `target/release-manifest/20260801-195218-985-d4cd4758/release-manifest.json` |
 
 ### Verified Artifact Identity
 
 | Artifact | Identity |
 | --- | --- |
-| RC Image | `gameexchange-rc:153ca9ad0345-20260801-184550-076-d0d614fb` |
-| Image ID | `sha256:c4f181caa44efb220bd02387ed2b092fe3c09d73b27fcd821181ac84d4ab10b2` |
-| Image Digest | `sha256:c4f181caa44efb220bd02387ed2b092fe3c09d73b27fcd821181ac84d4ab10b2` |
-| WAR | `target/GameExchange_war-1.0-SNAPSHOT.war` |
-| WAR SHA-256 | `F0D6F39DAC681C8E868AC2FB6B900B51E98AAD07D96ED925CA792FAD3635A407` |
+| RC Image | `gameexchange-rc:1.0.0-rc1-6cc2c88dd01b-20260801-194735-296-859df335` |
+| Image ID | `sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2` |
+| Image Digest | `sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2` |
+| WAR | `target/GameExchange_war-1.0.0-rc1.war` |
+| WAR SHA-256 | `C27AF41FC6B52C842E7AD687F1B6C176DEB1A88558E41C6BBCBF24A4D758F452` |
+
+### Gate Summary
+
+| Gate | Status |
+| --- | --- |
+| Build Gate | `PASSED` |
+| Test Gate | `PASSED` |
+| Database Gate | `PASSED` |
+| Docker Runtime Gate | `PASSED` |
+| Artifact Gate | `PASSED` |
 
 ## 1. Release Identity
 
 | Gate | Acceptance Criteria | Evidence | Status |
 | --- | --- | --- | --- |
-| Version | 版本唯一、不是 `SNAPSHOT`，并与构建制品及 Git Tag 一致 | RC Version 已记录，但 WAR 仍为 `1.0-SNAPSHOT` | `BLOCKED` |
-| Git Commit | 记录完整 commit hash，且所有验证均基于该 commit | `target/release-gate/20260801-184550-076-d0d614fb/git-identity.txt` | `PASSED` |
+| Version | 版本唯一、不是 `SNAPSHOT`，并与 Maven、WAR 和 Image 版本一致 | RC Version 与 Artifact Manifest 均记录 `1.0.0-rc1` | `PASSED` |
+| Git Commit | 记录完整 commit hash，且所有验证均基于该 commit | `target/release-gate/20260801-194735-296-859df335/git-identity.txt` | `PASSED` |
 | Git Tag | Tag 唯一，并精确指向已记录的 Git Commit | 本阶段未创建 Tag | `BLOCKED` |
-| Working Tree Status | `git status --porcelain` 无输出，无未跟踪或未提交文件 | `target/release-gate/20260801-184550-076-d0d614fb/git-status.txt` | `PASSED` |
+| Working Tree Status | `git status --porcelain` 无输出，无未跟踪或未提交文件 | `target/release-gate/20260801-194735-296-859df335/git-status.txt` | `PASSED` |
 
 ## 2. Build Verification
 
@@ -102,19 +112,22 @@ Known Limitation 只有在影响、处置方式和责任人明确并完成风险
 
 | ID | Uncovered Area | Risk | Mitigation / Acceptance Owner | Status |
 | --- | --- | --- | --- | --- |
-| KL-01 | 生产 TLS、外部 Secret、备份恢复和高可用不属于本地 RC Runtime 范围 | 本地通过不代表生产运维就绪 | `<required>` | `BLOCKED` |
-| KL-02 | 浏览器 UI 端到端流程未实现完整自动化 | 前端资源加载或交互回归可能未被 API 测试发现 | `<required>` | `BLOCKED` |
-| KL-03 | Release Gate 尚未接入 CI | 手工执行可能受到主机状态和操作差异影响 | `<required>` | `BLOCKED` |
-| KL-04 | `<additional limitation or none>` | `<required>` | `<required>` | `BLOCKED` |
+| KL-01 | 未验证生产 TLS 配置 | 本地 HTTP 验证不能证明生产传输链路安全 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-02 | 未验证外部 Secret 管理 | 当前验证不能证明生产凭据的分发、轮换和撤销流程 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-03 | 未验证高可用部署 | 单实例通过不能证明节点故障时的服务连续性 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-04 | 未验证备份恢复流程 | 当前验证不能证明数据可在故障后按目标恢复 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-05 | 未执行真实生产流量测试 | 隔离 Runtime 结果不能代表生产负载下的容量与稳定性 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-06 | 浏览器 UI 端到端流程未实现完整自动化 | 前端资源加载或交互回归可能未被 API 测试发现 | `Waiting for risk acceptance owner.` | `BLOCKED` |
+| KL-07 | Release Gate 尚未接入 CI | 手工执行可能受到主机状态和操作差异影响 | `Waiting for risk acceptance owner.` | `BLOCKED` |
 
 ## 8. Approval
 
 | Approval | Reviewer | Date | Status | Evidence / Comment |
 | --- | --- | --- | --- | --- |
-| Technical Review | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `<required>` |
-| Database Review | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `<required>` |
-| Runtime Review | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `<required>` |
-| Release Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `<required>` |
+| Technical Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
+| Database Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
+| Runtime Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
+| Release Owner Approval | `<required>` | `<YYYY-MM-DD>` | `BLOCKED` | `Waiting for human approval.` |
 
 ## Final Decision
 

@@ -112,9 +112,11 @@ Dockerfile 使用显式 `COPY`，即使 Build Context 未来增加其他文件�
 | 测试文件数 | 0 |
 | 测试执行结果 | 没有测试可执行，不能视为业务测试通过 |
 | Maven Warning | 成功构建日志未出现 Warning |
-| WAR | `target/GameExchange_war-1.0-SNAPSHOT.war` |
+| 当前 WAR 路径示例 | `target/GameExchange_war-1.0.0-rc1.war` |
 | WAR 大小 | 8,955,705 字节 |
 | SHA-256 | `AB1DFB08D965AF74F93AD3E8D694238DC877C894A1E1036F05B85AEA55DD1798` |
+
+历史验证记录中的路径已根据当前 RC artifact 命名规则更新，仅表示文档示例，不改变历史 evidence。表中的 WAR 大小和 SHA-256 仍属于 Phase 2B 实际验证结果。
 
 WAR 内容检查：
 

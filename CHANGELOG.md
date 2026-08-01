@@ -1,13 +1,26 @@
 # 变更日志
 
-本文件记录 GameExchange 已经实施的工程化变更。项目当前没有正式版本发布记录，因此现阶段统一记录在 `Unreleased` 下。
+本文件记录 GameExchange 已经实施的工程化变更。尚未纳入版本的变化记录在 `Unreleased` 下，发布候选版本单独记录。
 
 记录原则：
 
 - 只记录已经实施并完成相关验证的变化。
 - 不补写无法确认的早期开发历史。
 - 不在变更记录中保存凭据、服务器地址或其他敏感信息。
-- 正式发布版本后，再将对应内容从 `Unreleased` 移入带日期的版本章节。
+- 形成发布候选或正式版本后，在带日期的版本章节中记录对应内容。
+
+## [1.0.0-rc1] - 2026-08-01
+
+### 变更
+
+- 完成交易事务可靠性增强。
+- 增加 TradeService 事务回滚、失败注入和并发购买验证。
+- 增加 Battle 幂等、防重复提交、并发和持久化验证。
+- 增加玩家在线状态 Heartbeat。
+- 增加数据库 Migration 管理及 Baseline、Upgrade、HEX Guard 验证。
+- 增加 Docker Runtime 验证。
+- 增加 Release Gate 自动化。
+- 增加 Artifact Identity 追踪及 WAR、Image、Migration 制品验证。
 
 ## [Unreleased]
 
