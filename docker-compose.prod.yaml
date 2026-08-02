@@ -1,0 +1,98 @@
+name: gameexchange-prod
+
+services:
+  mysql:
+    image: mysql:8.4@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    environment:
+      MYSQL_DATABASE: game_exchange
+      MYSQL_USER: "${MYSQL_USER:-gameexchange_app}"
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_app_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - type: bind
+        source: "${MYSQL_DATA_DIR:?Set MYSQL_DATA_DIR to the mounted ESSD MySQL directory}"
+        target: /var/lib/mysql
+      - type: bind
+        source: ./database/schema.sql
+        target: /docker-entrypoint-initdb.d/01-schema.sql
+        read_only: true
+    secrets:
+      - mysql_app_password
+      - mysql_root_password
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'MYSQL_PWD="$$(cat /run/secrets/mysql_root_password)" mysqladmin ping --host=127.0.0.1 --user=root --silent'
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    stop_grace_period: 60s
+    networks:
+      - backend
+
+  app:
+    image: "${APP_IMAGE:?Set APP_IMAGE to the approved ACR image@sha256 digest}"
+    pull_policy: always
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: "jdbc:mysql://mysql:3306/game_exchange?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&connectionCollation=utf8mb4_0900_ai_ci&allowPublicKeyRetrieval=true"
+      DB_USERNAME: "${MYSQL_USER:-gameexchange_app}"
+      SIMULATOR_ENABLED: "false"
+      TZ: Asia/Shanghai
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        export DB_PASSWORD="$$(cat /run/secrets/mysql_app_password)"
+        exec catalina.sh run
+    secrets:
+      - mysql_app_password
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error --max-time 3 http://127.0.0.1:8080/vue/assets/js/app-config.js >/dev/null
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: gameexchange-prod-backend
+    driver: bridge
+
+secrets:
+  # 文件型 Secret 保留宿主机权限，部署前必须按生产文档设置 owner/group/mode。
+  mysql_app_password:
+    file: "${SECRETS_DIR:-/opt/gameexchange/secrets}/mysql_app_password"
+  mysql_root_password:
+    file: "${SECRETS_DIR:-/opt/gameexchange/secrets}/mysql_root_password"
