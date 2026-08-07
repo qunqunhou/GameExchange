@@ -38,6 +38,15 @@
 - **Phase 3A**：新增 `database/migrations/phase-3a-add-player-last-seen-at.sql`，用于为已有数据库增加玩家在线租约时间字段和查询索引。
 - **Phase 3B**：新增 `PresenceService` 与 `POST /presence/heartbeat`，由已登录 Session 中的玩家身份刷新在线租约。
 - **Phase 3C**：新增共享前端 Heartbeat 调度器，按 20 秒周期刷新租约，并在页面恢复可见时立即补发。
+- **Phase 5A**：新增定向字符集数据修复 Migration，只处理已经确认的历史乱码记录，并提供执行前后校验。
+- **Phase 5C**：新增 `battle_record` 持久化表、唯一请求约束和对应 DAO，为战斗结算幂等提供数据库依据。
+- **测试基线**：建立 JUnit 5、Mockito 和 Testcontainers 测试结构；当前单元测试快照为 `42/42` 通过，集成测试继续由 Maven Failsafe 在 `verify` 阶段执行。
+- **Docker 基线**：新增多阶段 `Dockerfile`、开发 Compose、真实 Healthcheck、持久化数据库 Volume 和运行验证记录。
+- **Phase 6.1-A**：新增单 ECS 生产 Compose、Nginx 入口配置和生产部署手册，覆盖文件型 Secret、ESSD 数据目录、备份、验证和回滚边界。
+- **Observability P1.1**：新增 Micrometer Prometheus Registry、JVM/进程指标初始化和 `/metrics` 采集端点。
+- **Observability P1.2**：新增在线玩家 Gauge 和成功交易 Counter；在线人数采样复用 60 秒 Lease 查询，数据库故障时返回 `NaN`。
+- **Observability P1.3**：新增 Prometheus、Node Exporter 和 Grafana Compose，自动加载 Prometheus 数据源及包含 11 个面板的业务 Dashboard。
+- **CI 质量门禁**：新增 GitHub Actions 工作流，在 Push、Pull Request 或手动触发时使用 JDK 17 执行 Maven `verify`，失败时保存 Surefire 和 Failsafe 报告。
 
 ### 变更
 
@@ -58,14 +67,30 @@
 - **Phase 4B.2**：Java Entity、DAO 和相关测试移除对 `online_status` 的运行时依赖；数据库字段暂保留。
 - **Database Constraint Repair**：新增独立 Migration，修复现有 MySQL Volume 中 `item.chk_item_rarity` 的字符集定义，并仅修复已确认的三条历史异常数据。
 - **Phase 4B.3**：更新 `CODE_REVIEW.md` 和本变更日志，明确当前 Presence 使用 `last_seen_at` + 60 秒 Lease；`online_status` 仅作为待 Phase 4C 清理的 Legacy 字段保留。
+- **容器运行安全**：应用以固定非 root UID/GID 运行；生产 Compose 启用 `no-new-privileges`、移除 Linux Capabilities，并要求应用镜像使用 Registry Digest。
+- **监控访问边界**：Prometheus 和 Grafana 只绑定宿主机回环地址，生产 Nginx 对精确 `/metrics` 路径返回 404，Prometheus 改从 Docker 内部网络采集应用。
 
 ### 移除
 
 - **Milestone 1.3**：移除源码中的旧 `druid.properties`，避免继续把数据库凭据作为资源文件打包。
 - **Phase 4B.1**：移除 `/stats` 的 Legacy 在线人数查询与 Shadow Verification 日志；`onlineCount` 继续使用 60 秒 Lease 查询，API 返回结构不变。
+- **Phase 4C**：通过独立 Migration 删除 `player.online_status` Legacy 字段及其约束；在线状态唯一事实来源保持为 `last_seen_at` Lease。
 
 ### 安全
 
 - **Milestone 1.3**：数据库用户名和密码改为通过运行环境注入，不再保存在当前源码配置中。
 - **Milestone 1.4**：日志不记录数据库密码、Token、连接地址或完整业务请求参数。
+- 用户注册密码使用 BCrypt 保存；Legacy 明文密码在成功登录后以条件更新方式迁移为 BCrypt Hash。
+- 生产数据库密码通过文件型 Secret 注入，不写入 Compose、镜像或仓库配置。
 - 历史构建产物可能仍包含旧配置；不得直接部署，应轮换历史凭据并从当前源码重新构建。
+
+### 文档
+
+- **P2.1A**：重整根目录 README，补充项目亮点、Mermaid 架构图、测试与监控入口，并同步当前能力边界。
+- 新增 Prometheus、Grafana 启动与排错手册，更新文档索引中的数据库迁移、生产部署和监控入口。
+
+### 已知限制
+
+- **P1.4 已跳过**：当前仍由各 Servlet 分别执行 Session 检查，尚未实施统一 Authentication Filter 和 CSRF Token 校验。
+- 当前可观测性范围不包含告警规则、Alertmanager、集中日志或多节点监控。
+- CI 的本地等价命令已完成 `42/42` 单元测试和 `21/21` 集成测试验证；GitHub Hosted Runner 首次运行仍待代码推送后确认，当前不包含 CD 自动部署。

@@ -2,9 +2,32 @@
 
 ## 项目简介
 
-GameExchange 是一个基于 Java Servlet 的游戏虚拟经济交易项目，包含玩家注册与登录、玩家信息、物品查询、市场挂售与购买、战斗结果保存及统计数据展示等功能。
+GameExchange 是一个基于 Java Servlet 的游戏虚拟经济交易项目，覆盖玩家注册登录、物品管理、市场交易、战斗结算、在线状态和业务统计。项目保留传统 WAR 部署方式，同时提供开发、生产和监控三套 Docker Compose 配置，用于展示从业务功能到可运行工程体系的完整演进过程。
 
-当前项目正在进行工程化整理，支持 Maven/Tomcat 手动运行和 Docker Compose 一键开发环境。开发编排不代表项目已经具备生产环境高可用能力。
+当前实现面向单机部署，不宣称具备多实例高可用能力。未完成的认证、CSRF、CD 自动部署和 Kubernetes 能力会在“当前限制”中明确列出。
+
+## 项目亮点
+
+- **交易一致性**：购买与挂售在数据库事务中完成，关键记录使用行锁和所有权校验，失败时回滚。
+- **可信战斗结算**：服务端生成金币和掉落结果，通过 `requestId` 保证重复提交幂等。
+- **在线状态 Lease**：前端按 20 秒发送 Heartbeat，服务端以 60 秒租约窗口计算实时在线人数。
+- **可观测性**：Micrometer 暴露 JVM 与业务指标，Prometheus 采集应用和主机数据，Grafana 自动加载数据源与 11 个业务面板。
+- **容器安全基线**：应用容器以固定非 root UID/GID 运行，应用与数据库基础镜像使用 Digest 固定，生产密码通过文件型 Secret 注入。
+- **可验证交付**：Maven Wrapper 固定构建入口，当前测试基线为 42 项单元测试和 21 项集成测试，Docker 服务和监控采集均完成运行验证。
+
+## 架构概览
+
+```mermaid
+flowchart LR
+    browser["浏览器"] --> nginx["Nginx / TLS"]
+    nginx --> app["Tomcat 9 / Java Servlet"]
+    app --> mysql["MySQL 8.4"]
+    grafana["Grafana"] --> prometheus["Prometheus"]
+    prometheus -->|"/metrics"| app
+    prometheus --> exporter["Node Exporter"]
+```
+
+生产流量由宿主机 Nginx 转发到仅监听 `127.0.0.1` 的应用端口；Prometheus 通过 Docker 内部网络直接采集 `/metrics`，公网 Nginx 对该路径返回 404。
 
 ## 技术栈
 
@@ -19,6 +42,10 @@ GameExchange 是一个基于 Java Servlet 的游戏虚拟经济交易项目，�
 | JSON | Fastjson 1.2.83、Gson 2.10.1 | 当前代码同时使用两套 JSON 工具 |
 | 前端 | HTML、Vue 2、Axios、Three.js、GSAP | 部分依赖通过 CDN 加载 |
 | 日志 | `java.util.logging` | 由 Tomcat 运行环境接管输出和级别配置 |
+| 测试 | JUnit 5、Mockito、Testcontainers | 单元测试默认执行，集成测试在 `verify` 阶段执行 |
+| CI | GitHub Actions | Push、Pull Request 或手动触发 Maven `verify` |
+| 监控 | Micrometer、Prometheus、Node Exporter、Grafana | 业务、JVM 和主机指标统一采集 |
+| 部署 | Docker Compose、Nginx、阿里云 ECS/ACR | 提供单 ECS 生产部署与回滚基线 |
 
 ## 运行前提
 
@@ -157,6 +184,24 @@ target/GameExchange_war-1.0.0-rc1.war
 
 前端通过 `vue/assets/js/app-config.js` 根据当前页面地址计算 `BASE_PATH`，静态资源使用相对路径，API 统一通过 `window.GE_API()` 生成。因此 WAR 可以使用其他名称，也可以部署为 `ROOT.war`，不需要修改 HTML。
 
+## 测试
+
+运行单元测试：
+
+```powershell
+.\mvnw.cmd test
+```
+
+Linux 或 macOS 使用 `./mvnw test`。集成测试类以 `*IT.java` 命名，并在以下命令的 Failsafe 阶段执行：
+
+```powershell
+.\mvnw.cmd verify
+```
+
+截至 2026-08-07，当前代码的单元测试结果为 `42/42` 通过，Testcontainers 集成测试为 `21/21` 通过，覆盖交易、战斗、玩家信息、在线人数查询、指标输出、数据库基线和 Migration 等关键边界。该数字是验证快照；后续新增测试时应同步更新。
+
+`.github/workflows/ci.yml` 会在 Push、Pull Request 或手动触发时执行同一条 Maven `verify` 命令。当前本地等价验证已经通过；GitHub Hosted Runner 的首次执行结果需在工作流随代码推送后确认，在此之前不添加构建状态徽章。
+
 ## Docker Compose 开发环境
 
 Compose 使用现有 `Dockerfile` 构建应用，并管理 MySQL 8.4、Bridge Network 和持久化 Volume。`schema.sql` 与开发用 `seed.sql` 只会在空数据卷首次启动时执行。
@@ -215,7 +260,7 @@ app 和 MySQL 均配置 `restart: unless-stopped`。该策略会在容器进程�
 
 两个服务均使用 `json-file` 日志驱动，并设置 `max-size: "10m"`、`max-file: "3"`。每个容器最多保留约 30 MB 的 Docker JSON 日志，避免日志无限增长占满宿主机磁盘。
 
-数据库密码仍通过环境变量注入，具有 Docker 管理权限的人员可以通过 inspect 查看；生产 Secret 文件化将在后续独立阶段处理。
+开发 Compose 的数据库密码仍通过本地 `.env` 注入，具有 Docker 管理权限的人员可以通过 inspect 查看。生产 Compose 已改用文件型 Secret，并要求在宿主机上设置最小读取权限；Docker 管理权限本身仍等价于高权限访问边界。
 
 app 容器以非 root 用户 `gameexchange` 运行，固定 UID/GID 为 `10001:10001`，登录 Shell 为 `nologin`。Tomcat 运行时需要写入的 `/usr/local/tomcat/webapps`、`work`、`temp` 和 `logs` 目录归该用户所有；`bin`、`conf` 和 `lib` 继续由 root 持有并供运行用户只读访问。唯一例外是预创建的 `/usr/local/tomcat/conf/Catalina/localhost`，该目录归 `gameexchange:gameexchange` 所有并使用 `0750` 权限，以便 Tomcat HostConfig 在 non-root 模式下管理 localhost 的 Context 配置，而不扩大整个 `conf` 目录的写权限。固定数字 UID/GID 可以避免不同环境中用户名映射不一致，并为后续容器编排的安全策略提供稳定身份。
 
@@ -226,6 +271,26 @@ Dockerfile 的 JDK builder、Tomcat runtime 和 Compose 的 MySQL 镜像均使�
 更新镜像时应同时更新 tag 和 digest：先从可信 Registry 获取目标 tag 的 digest，确认它对应部署平台，再更新 Dockerfile 或 `compose.yaml`。提交前依次执行 `docker compose config`、Maven 测试与打包、`docker build`、app-only 重建、Healthcheck 和业务回归。不要只修改 tag 而保留旧 digest，也不要只替换未经平台验证的 digest。
 
 回滚应用 builder 或 runtime 镜像时，将对应 `FROM` 恢复为上一个已验证的 `tag@digest` 后重新构建并仅重建 app。回滚 MySQL 镜像时，将 `compose.yaml` 恢复为上一个已验证的 `tag@digest`；数据库镜像降级可能与现有数据目录格式不兼容，必须先核对 MySQL 官方兼容性说明和可恢复备份，禁止通过删除 `mysql-data` Volume 实现回滚。
+
+## Prometheus 与 Grafana
+
+开发应用启动后，在 PowerShell 中启动监控：
+
+```powershell
+$env:APP_NETWORK_NAME = "gameexchange_backend"
+docker compose -f monitor/docker-compose.monitor.yaml config --quiet
+docker compose -f monitor/docker-compose.monitor.yaml up --detach
+docker compose -f monitor/docker-compose.grafana.yaml config --quiet
+docker compose -f monitor/docker-compose.grafana.yaml up --detach
+```
+
+访问地址：
+
+- Prometheus：<http://127.0.0.1:9090>
+- Grafana：<http://127.0.0.1:3000>
+- 应用指标：<http://127.0.0.1:8080/metrics>（通过 `APP_PORT` 覆盖端口时使用实际值）
+
+Prometheus 和 Grafana 只绑定本机回环地址。数据源与业务 Dashboard 由 provisioning 文件自动加载，详细启动、验收和排错方式见[监控运行手册](docs/observability/MONITORING.md)。
 
 ## 部署到 Tomcat 9
 
@@ -270,21 +335,31 @@ Tomcat 默认端口、自动部署开关或 Context 配置被修改时，实际�
 ```text
 GameExchange/
 ├─ compose.yaml                       # Compose 开发环境编排
+├─ docker-compose.prod.yaml           # 单 ECS 生产环境编排
 ├─ Dockerfile                         # 应用镜像唯一构建来源
 ├─ .env.example                       # 非敏感开发环境变量模板
-├─ README.md                         # 项目入口与运行说明
+├─ README.md                          # 项目入口与运行说明
 ├─ DATABASE_MIGRATION.md              # 数据库初始化、升级顺序与 Migration 清单
-├─ CODE_REVIEW.md                    # Milestone 1.1 项目审查报告
-├─ CHANGELOG.md                      # 工程变更记录
+├─ CODE_REVIEW.md                     # Milestone 1.1 项目审查报告
+├─ CHANGELOG.md                       # 工程变更记录
 ├─ database/
 │  ├─ migrations/                    # 已有数据库的一次性增量迁移
 │  ├─ schema.sql                     # MySQL 8.4 数据库结构基线
 │  └─ seed.sql                       # 最小可重复种子数据
+├─ deploy/
+│  └─ nginx/                         # 生产 TLS 入口与反向代理配置
+├─ monitor/
+│  ├─ docker-compose.monitor.yaml    # Prometheus 与 Node Exporter
+│  ├─ docker-compose.grafana.yaml    # Grafana
+│  ├─ prometheus/                    # Prometheus 采集配置
+│  └─ grafana/                       # 数据源、Dashboard 与 provisioning
 ├─ .mvn/wrapper/
 │  └─ maven-wrapper.properties       # Maven 版本、下载地址与校验和
 ├─ docs/
 │  ├─ README.md                      # 文档索引与维护规则
-│  └─ docker/                        # Docker 与 Compose 验证记录
+│  ├─ deployment/                    # 生产部署与回滚手册
+│  ├─ docker/                        # Docker 与 Compose 验证记录
+│  └─ observability/                 # 监控运行和排错手册
 ├─ mvnw                              # Linux/macOS Maven Wrapper
 ├─ mvnw.cmd                          # Windows Maven Wrapper
 ├─ pom.xml                           # Maven 构建与依赖配置
@@ -294,6 +369,7 @@ GameExchange/
 │  │  ├─ dao/                        # 数据访问
 │  │  ├─ entity/                     # 数据实体
 │  │  ├─ service/                    # 交易业务服务
+│  │  ├─ monitor/                    # Micrometer 指标与采集端点
 │  │  ├─ servlet/                    # HTTP 接口
 │  │  ├─ simulator/                  # 模拟任务和监听器
 │  │  └─ util/                       # 数据库连接工具
@@ -302,8 +378,9 @@ GameExchange/
 │  └─ webapp/
 │     ├─ index.jsp                   # Web 应用入口
 │     └─ vue/                        # 页面、共享运行配置与前端资源
+├─ src/test/java/com/game/            # 单元测试与集成测试
 └─ tools/
-   └─ static-server.js               # 静态页面预览辅助工具，不提供后端接口
+   └─ release/                        # Release Gate 与制品身份检查脚本
 ```
 
 `.idea/`、`out/` 和 `target/` 属于本地配置或构建产物，不是业务源码。
@@ -311,11 +388,12 @@ GameExchange/
 ## 当前限制
 
 - 数据库尚未引入自动迁移工具；历史 Migration 需按版本人工执行并保存记录，Compose 不会为已有数据卷自动执行。
-- 已声明 JUnit 5 和 Mockito 依赖，但当前没有 `src/test` 测试代码。
 - Maven Wrapper 和项目依赖首次下载时需要访问 Maven Central，离线环境必须预先准备缓存。
 - 前端部分资源依赖 CDN，离线环境可能无法完整加载。
 - Session 保存在单个 Tomcat 进程内，当前不支持无状态多副本扩展。
-- 已提供 Dockerfile 和单机开发 Compose；尚未提供 Kubernetes 或 CI/CD 配置。
+- 已提供开发、生产和监控 Compose，以及 GitHub Actions CI 验证；尚未提供 Kubernetes 或 CD 自动部署配置。
+- 各 Servlet 仍分别执行 Session 检查，尚未实施统一认证 Filter 和 CSRF Token 校验。
+- 当前监控没有告警规则、Alertmanager 或集中日志系统，只提供指标采集和 Dashboard。
 - `tools/static-server.js` 只能辅助查看静态资源，不能替代 Tomcat，也不能验证登录、Session 或数据库接口。
 - `deploy.bat` 含本机和远程环境假设，不应作为通用或生产部署方案。
 
@@ -329,5 +407,7 @@ GameExchange/
 
 - 数据库初始化、历史 Migration 顺序及风险：[DATABASE_MIGRATION.md](DATABASE_MIGRATION.md)
 - 文档索引与维护规则：[docs/README.md](docs/README.md)
+- 单 ECS 生产部署、备份和回滚：[docs/deployment/PRODUCTION_ECS.md](docs/deployment/PRODUCTION_ECS.md)
+- Prometheus、Grafana 启动与排错：[docs/observability/MONITORING.md](docs/observability/MONITORING.md)
 - 项目架构、模块关系、数据库关系、技术债和 Docker 就绪度：[CODE_REVIEW.md](CODE_REVIEW.md)
 - 工程升级与兼容性变化：[CHANGELOG.md](CHANGELOG.md)
