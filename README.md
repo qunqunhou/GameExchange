@@ -181,8 +181,10 @@ Linux 或 macOS 执行：
 默认生成：
 
 ```text
-target/GameExchange_war-1.0.0-rc1.war
+target/GameExchange_war-1.0.0-rc2.war
 ```
+
+当前 `main` 生成 RC2 准备版本；已经冻结的 `v1.0.0-rc1` 标签、制品身份和验收记录保持不变。RC2 只有完成独立 Release Gate、人工审批和 Git Tag 后才能视为正式发布候选。
 
 前端通过 `vue/assets/js/app-config.js` 根据当前页面地址计算 `BASE_PATH`，静态资源使用相对路径，API 统一通过 `window.GE_API()` 生成。因此 WAR 可以使用其他名称，也可以部署为 `ROOT.war`，不需要修改 HTML。
 
@@ -299,7 +301,7 @@ Prometheus 和 Grafana 只绑定本机回环地址。数据源与业务 Dashboar
 以下命令假设已经设置 `CATALINA_HOME`，并且数据库环境变量能够传递给 Tomcat：
 
 ```powershell
-Copy-Item ".\target\GameExchange_war-1.0.0-rc1.war" `
+Copy-Item ".\target\GameExchange_war-1.0.0-rc2.war" `
   "$env:CATALINA_HOME\webapps\GameExchange_war.war" -Force
 
 & "$env:CATALINA_HOME\bin\startup.bat"
