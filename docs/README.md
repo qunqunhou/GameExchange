@@ -14,6 +14,8 @@
 | [Compose 验证记录](docker/COMPOSE_VERIFY.md) | Phase 2C 的静态配置和 Runtime Verification 证据 | 每次完成新的 Compose 验证时 |
 | [生产部署手册](deployment/PRODUCTION_ECS.md) | 单 ECS 生产部署、Secret、备份、验证和回滚基线 | 生产拓扑、部署流程或回滚边界变化时 |
 | [监控运行手册](observability/MONITORING.md) | Prometheus、Grafana、指标、Dashboard 和排错方式 | 指标、监控配置或运行方式变化时 |
+| [RC2 Release Checklist](releases/1.0.0-rc2/RELEASE_CHECKLIST.md) | RC2 Gate、制品身份、已知限制和最终决策 | RC2 Gate、审批、Tag 或归档状态变化时 |
+| [RC2 Release Approval](releases/1.0.0-rc2/RELEASE_APPROVAL.md) | RC2 人工审批与风险接受记录 | Reviewer 完成审核或风险决策时 |
 
 ## 文档职责
 
