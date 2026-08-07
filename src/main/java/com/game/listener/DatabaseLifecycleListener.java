@@ -1,5 +1,7 @@
 package com.game.listener;
 
+import com.game.monitor.BusinessMetrics;
+import com.game.monitor.JvmMetricsInitializer;
 import com.game.util.DBUtil;
 
 import javax.servlet.ServletContextEvent;
@@ -16,6 +18,9 @@ public class DatabaseLifecycleListener implements ServletContextListener {
         // 让连接池与 Web 应用共享完整生命周期，并在数据库不可用时尽早失败。
         DBUtil.getDataSource();
         initialized = true;
+
+        JvmMetricsInitializer.init();
+        BusinessMetrics.init();
     }
 
     @Override
