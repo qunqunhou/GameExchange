@@ -49,3 +49,23 @@ jobs:
             target/failsafe-reports/
           if-no-files-found: warn
           retention-days: 7
+
+  docker-image:
+    name: Docker Image Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE_TAG: gameexchange-ci:${{ github.sha }}
+      DOCKER_BUILDKIT: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: docker build --progress=plain --tag "$IMAGE_TAG" .
+
+      - name: Verify non-root runtime user
+        run: |
+          runtime_user="$(docker image inspect --format '{{.Config.User}}' "$IMAGE_TAG")"
+          test "$runtime_user" = "gameexchange:gameexchange"

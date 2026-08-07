@@ -47,6 +47,7 @@
 - **Observability P1.2**：新增在线玩家 Gauge 和成功交易 Counter；在线人数采样复用 60 秒 Lease 查询，数据库故障时返回 `NaN`。
 - **Observability P1.3**：新增 Prometheus、Node Exporter 和 Grafana Compose，自动加载 Prometheus 数据源及包含 11 个面板的业务 Dashboard。
 - **CI 质量门禁**：新增 GitHub Actions 工作流，在 Push、Pull Request 或手动触发时使用 JDK 17 和 `actions/setup-java@v5` 执行 Maven `verify`，失败时保存 Surefire 和 Failsafe 报告。
+- **P2.4A Docker Image Build Gate**：CI 并行构建当前提交的临时 Docker 镜像，并校验运行用户保持为 `gameexchange:gameexchange`；不登录 Registry、不推送镜像且不执行部署。
 
 ### 变更
 
@@ -94,4 +95,4 @@
 
 - **P1.4 已跳过**：当前仍由各 Servlet 分别执行 Session 检查，尚未实施统一 Authentication Filter 和 CSRF Token 校验。
 - 当前可观测性范围不包含告警规则、Alertmanager、集中日志或多节点监控。
-- CI 的本地等价命令已完成 `42/42` 单元测试和 `21/21` 集成测试验证；GitHub Hosted Runner 的 CI #1 已成功完成，当前不包含 CD 自动部署。
+- CI 的本地等价命令已完成 `42/42` 单元测试、`21/21` 集成测试和 Docker 镜像构建验证；当前不包含 Registry 自动发布或 CD 自动部署。

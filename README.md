@@ -45,7 +45,7 @@ flowchart LR
 | 前端 | HTML、Vue 2、Axios、Three.js、GSAP | 部分依赖通过 CDN 加载 |
 | 日志 | `java.util.logging` | 由 Tomcat 运行环境接管输出和级别配置 |
 | 测试 | JUnit 5、Mockito、Testcontainers | 单元测试默认执行，集成测试在 `verify` 阶段执行 |
-| CI | GitHub Actions | Push、Pull Request 或手动触发 Maven `verify` |
+| CI | GitHub Actions | Push、Pull Request 或手动触发 Maven `verify` 与 Docker 镜像构建 |
 | 监控 | Micrometer、Prometheus、Node Exporter、Grafana | 业务、JVM 和主机指标统一采集 |
 | 部署 | Docker Compose、Nginx、阿里云 ECS/ACR | 提供单 ECS 生产部署与回滚基线 |
 
@@ -202,7 +202,7 @@ Linux 或 macOS 使用 `./mvnw test`。集成测试类以 `*IT.java` 命名，�
 
 截至 2026-08-07，当前代码的单元测试结果为 `42/42` 通过，Testcontainers 集成测试为 `21/21` 通过，覆盖交易、战斗、玩家信息、在线人数查询、指标输出、数据库基线和 Migration 等关键边界。该数字是验证快照；后续新增测试时应同步更新。
 
-`.github/workflows/ci.yml` 会在 Push、Pull Request 或手动触发时执行同一条 Maven `verify` 命令。当前本地等价验证已经通过；GitHub Hosted Runner 已于 2026-08-07 完成首次成功运行，详见 [CI #1](https://github.com/qunqunhou/GameExchange/actions/runs/31157605181)。最新状态以页面顶部的动态徽章为准。
+`.github/workflows/ci.yml` 会在 Push、Pull Request 或手动触发时并行执行 Maven `verify` 与 Docker Image Build。镜像任务使用当前提交构建临时镜像，并检查运行用户仍为 `gameexchange:gameexchange`；任务不会登录 Registry、推送镜像或部署环境。当前本地等价验证已经通过；GitHub Hosted Runner 的最新状态以页面顶部的动态徽章为准。
 
 ## Docker Compose 开发环境
 
@@ -393,7 +393,7 @@ GameExchange/
 - Maven Wrapper 和项目依赖首次下载时需要访问 Maven Central，离线环境必须预先准备缓存。
 - 前端部分资源依赖 CDN，离线环境可能无法完整加载。
 - Session 保存在单个 Tomcat 进程内，当前不支持无状态多副本扩展。
-- 已提供开发、生产和监控 Compose，以及 GitHub Actions CI 验证；尚未提供 Kubernetes 或 CD 自动部署配置。
+- 已提供开发、生产和监控 Compose，以及 Maven 与 Docker 镜像构建 CI；尚未提供 Registry 自动发布、Kubernetes 或 CD 自动部署配置。
 - 各 Servlet 仍分别执行 Session 检查，尚未实施统一认证 Filter 和 CSRF Token 校验。
 - 当前监控没有告警规则、Alertmanager 或集中日志系统，只提供指标采集和 Dashboard。
 - `tools/static-server.js` 只能辅助查看静态资源，不能替代 Tomcat，也不能验证登录、Session 或数据库接口。
