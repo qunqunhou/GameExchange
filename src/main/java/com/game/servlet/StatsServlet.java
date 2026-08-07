@@ -1,5 +1,6 @@
 package com.game.servlet;
 
+import com.game.service.PresenceService;
 import com.game.util.DBUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,8 +20,15 @@ import java.util.logging.Logger;
 public class StatsServlet extends HttpServlet {
 
     private static final Logger LOGGER = Logger.getLogger(StatsServlet.class.getName());
-    private static final String LEASE_ONLINE_COUNT_SQL = "SELECT COUNT(*) FROM player "
-            + "WHERE last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 60 SECOND";
+    private final PresenceService presenceService;
+
+    public StatsServlet() {
+        this(new PresenceService());
+    }
+
+    StatsServlet(PresenceService presenceService) {
+        this.presenceService = presenceService;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -72,11 +81,8 @@ public class StatsServlet extends HttpServlet {
 
     }
 
-    private int getLeaseOnlineCount(Connection conn) throws Exception {
-        try (PreparedStatement ps = conn.prepareStatement(LEASE_ONLINE_COUNT_SQL);
-             ResultSet rs = ps.executeQuery()) {
-            return rs.next() ? rs.getInt(1) : 0;
-        }
+    private int getLeaseOnlineCount(Connection conn) throws SQLException {
+        return presenceService.countOnlinePlayers(conn);
     }
 
     // 今日掉落稀有装备 Top10（稀有度不为"普通"的，按id倒序取最新10条）

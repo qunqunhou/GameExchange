@@ -1,6 +1,7 @@
 package com.game.servlet;
 
 import com.game.entity.Player;
+import com.game.monitor.BusinessMetrics;
 import com.game.service.TradeService;
 import com.alibaba.fastjson.JSONObject;
 
@@ -59,6 +60,7 @@ public class TradeServlet extends HttpServlet {
 
         JSONObject json = new JSONObject();
         if ("购买成功".equals(result)) {
+            BusinessMetrics.tradeSuccess();
             json.put("code", 200);
         } else {
             json.put("code", 500);

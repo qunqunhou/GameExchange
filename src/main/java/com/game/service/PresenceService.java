@@ -4,12 +4,16 @@ import com.game.util.DBUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PresenceService {
 
     private static final Logger LOGGER = Logger.getLogger(PresenceService.class.getName());
+    private static final String LEASE_ONLINE_COUNT_SQL = "SELECT COUNT(*) FROM player "
+            + "WHERE last_seen_at >= CURRENT_TIMESTAMP - INTERVAL 60 SECOND";
 
     public boolean markOnline(Integer playerId) {
         String sql = "UPDATE player SET last_seen_at = CURRENT_TIMESTAMP WHERE id = ?";
@@ -24,6 +28,13 @@ public class PresenceService {
     public boolean markOffline(Integer playerId) {
         String sql = "UPDATE player SET last_seen_at = NULL WHERE id = ?";
         return updatePresence(playerId, sql, "清理玩家在线租约失败");
+    }
+
+    public int countOnlinePlayers(Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(LEASE_ONLINE_COUNT_SQL);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
     }
 
     private boolean updatePresence(Integer playerId, String sql, String errorMessage) {
