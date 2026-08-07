@@ -87,4 +87,8 @@ Tag 和归档完成后，还必须回填 Checklist 的 Tag、Archive 和 Final D
 | Release Owner | `SMzhiman` |
 | Approval Date | `2026-08-07` |
 | Authorized Actions | 创建指向 Artifact Commit 的 Annotated Tag；归档 Gate 生成的确切 WAR、Manifest 和 SHA-256 校验文件 |
-| Remaining Finalization | Documentation Commit、Git Tag、Artifact Archive |
+| Remaining Finalization | `COMPLETED` |
+| Documentation Commit | `1dacb3aa5ec625559d76f8a774bcb337244f1d55` |
+| Git Tag | `v1.0.0-rc2`（Annotated Tag，指向 `562b503a911be996c5b96f6307413265ecdf4caa`） |
+| Artifact Archive | [GitHub Pre-release](https://github.com/qunqunhou/GameExchange/releases/tag/v1.0.0-rc2) |
+| Finalization Date | `2026-08-08` |

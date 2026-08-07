@@ -1,6 +1,6 @@
 # GameExchange 1.0.0-rc2 Release Checklist
 
-本文档记录 `GameExchange 1.0.0-rc2` 的发布门禁、制品身份、已知限制和最终决策。它只记录已经取得的证据；尚未完成的审批、Tag 和制品归档保持 `BLOCKED`。
+本文档记录 `GameExchange 1.0.0-rc2` 的发布门禁、制品身份、已知限制和最终决策。Required Gate、人工审批、风险接受、Git Tag 和制品归档均已完成，RC2 作为作品集技术预发布归档。
 
 ## 状态语义
 
@@ -17,19 +17,22 @@
 
 | 字段 | 值 |
 | --- | --- |
-| Overall Status | `BLOCKED` |
+| Overall Status | `PASSED` |
 | RC Gate Status | `PASSED` |
 | RC Version | `1.0.0-rc2` |
 | Artifact Commit | `562b503a911be996c5b96f6307413265ecdf4caa` |
 | Artifact Branch | `main` |
-| Documentation Commit | `PENDING` |
-| Git Tag | `PENDING` |
-| Tag Target Commit | `PENDING` |
+| Documentation Commit | `1dacb3aa5ec625559d76f8a774bcb337244f1d55` |
+| Git Tag | `v1.0.0-rc2` |
+| Tag Target Commit | `562b503a911be996c5b96f6307413265ecdf4caa` |
+| Tag Type | `annotated tag` |
+| Release URL | [GitHub Pre-release](https://github.com/qunqunhou/GameExchange/releases/tag/v1.0.0-rc2) |
 | Verification Date | `2026-08-07` |
+| Finalization Date | `2026-08-08` |
 | Release Gate Evidence | `target/release-gate/20260807-222130-114-a5ccab13/` |
 | Docker Runtime Evidence | `target/docker-runtime/20260807-222507-ee3113cd/` |
 | Artifact Manifest | `target/release-manifest/20260807-222602-313-b9d5b44f/release-manifest.json` |
-| Artifact Archive | `BLOCKED`，当前仅保存在本地 `target/` |
+| Artifact Archive | `PASSED`，WAR、Manifest 和 `SHA256SUMS.txt` 已归档到 GitHub Pre-release |
 
 ## Verified Artifact Identity
 
@@ -38,6 +41,10 @@
 | WAR | `target/GameExchange_war-1.0.0-rc2.war` |
 | WAR Size | `12239800` bytes |
 | WAR SHA-256 | `45E0A9B7EC2AF012A5E636527CF2A2C9A675667E3E7D4BAF556665BE9AAED8F6` |
+| Manifest Archive | `release-manifest-1.0.0-rc2.json` |
+| Manifest Size | `5455` bytes |
+| Manifest SHA-256 | `8CC3821C2622556849CBE4A02363EEEA1F2C4925ABDA4160349F96B561E5F3EA` |
+| Checksum Archive | `SHA256SUMS.txt` |
 | RC Image | `gameexchange-rc:1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13` |
 | Image ID | `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` |
 | Image Digest | `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` |
@@ -106,12 +113,13 @@ Verification Status 为 `BLOCKED` 表示该能力不在本次 Gate 的已验证�
 
 | 字段 | 值 |
 | --- | --- |
-| Final Status | `BLOCKED` |
+| Final Status | `PASSED` |
 | Approved Version | `1.0.0-rc2` |
 | Approved Commit | `562b503a911be996c5b96f6307413265ecdf4caa` |
 | Approved WAR SHA-256 | `45E0A9B7EC2AF012A5E636527CF2A2C9A675667E3E7D4BAF556665BE9AAED8F6` |
 | Approved Image Digest | `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` |
 | Release Approver | `SMzhiman` |
 | Approval Date | `2026-08-07` |
+| Release URL | [GitHub Pre-release](https://github.com/qunqunhou/GameExchange/releases/tag/v1.0.0-rc2) |
 
-当前阻断项：Documentation Commit、Git Tag 和 Release Artifact Archive 尚未完成。
+RC2 发布归档已完成。该结论仅表示作品集技术预发布门禁通过，不代表生产就绪；`KL-01` 至 `KL-09` 的适用边界继续有效。
