@@ -1,0 +1,57 @@
+name: gameexchange-monitor
+
+services:
+
+  prometheus:
+    image: crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/prometheus:v3.5.0
+    container_name: gameexchange-prometheus
+    restart: unless-stopped
+
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
+    ports:
+      - "127.0.0.1:9090:9090"
+
+    networks:
+      - monitor-network
+      - backend
+
+
+  node-exporter:
+    image: crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/node-exporter:v1.9.1
+    container_name: gameexchange-node-exporter
+    restart: unless-stopped
+
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+
+    networks:
+      - monitor-network
+
+
+volumes:
+
+  prometheus-data:
+
+
+networks:
+
+  monitor-network:
+    name: gameexchange-monitor-network
+    driver: bridge
+
+  backend:
+    external: true
+    name: "${APP_NETWORK_NAME:-gameexchange-prod-backend}"

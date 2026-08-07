@@ -1,0 +1,31 @@
+name: gameexchange-grafana
+
+services:
+
+  grafana:
+    image: crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/grafana@sha256:11c2e6c7993917ea89292b942e3428f73907b2809d554154bfb8b4ceb2301cc8
+    container_name: gameexchange-grafana
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources/prometheus.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml:ro
+      - ./grafana/provisioning/dashboards/gameexchange.yaml:/etc/grafana/provisioning/dashboards/gameexchange.yaml:ro
+      - ./grafana/gameexchange-business-monitor.json:/etc/grafana/dashboards/gameexchange-business-monitor.json:ro
+
+    networks:
+      - monitor-network
+
+    restart: unless-stopped
+
+
+volumes:
+  grafana-data:
+
+
+networks:
+  monitor-network:
+    external: true
+    name: gameexchange-monitor-network
