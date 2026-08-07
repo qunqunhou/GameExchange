@@ -46,7 +46,7 @@
 - **Observability P1.1**：新增 Micrometer Prometheus Registry、JVM/进程指标初始化和 `/metrics` 采集端点。
 - **Observability P1.2**：新增在线玩家 Gauge 和成功交易 Counter；在线人数采样复用 60 秒 Lease 查询，数据库故障时返回 `NaN`。
 - **Observability P1.3**：新增 Prometheus、Node Exporter 和 Grafana Compose，自动加载 Prometheus 数据源及包含 11 个面板的业务 Dashboard。
-- **CI 质量门禁**：新增 GitHub Actions 工作流，在 Push、Pull Request 或手动触发时使用 JDK 17 执行 Maven `verify`，失败时保存 Surefire 和 Failsafe 报告。
+- **CI 质量门禁**：新增 GitHub Actions 工作流，在 Push、Pull Request 或手动触发时使用 JDK 17 和 `actions/setup-java@v5` 执行 Maven `verify`，失败时保存 Surefire 和 Failsafe 报告。
 
 ### 变更
 
@@ -69,6 +69,7 @@
 - **Phase 4B.3**：更新 `CODE_REVIEW.md` 和本变更日志，明确当前 Presence 使用 `last_seen_at` + 60 秒 Lease；`online_status` 仅作为待 Phase 4C 清理的 Legacy 字段保留。
 - **容器运行安全**：应用以固定非 root UID/GID 运行；生产 Compose 启用 `no-new-privileges`、移除 Linux Capabilities，并要求应用镜像使用 Registry Digest。
 - **监控访问边界**：Prometheus 和 Grafana 只绑定宿主机回环地址，生产 Nginx 对精确 `/metrics` 路径返回 404，Prometheus 改从 Docker 内部网络采集应用。
+- **CI Action Runtime**：根据 GitHub Runner 弃用提示，将 `actions/setup-java` 从 v4 升级到使用 Node.js 24 的 v5。
 
 ### 移除
 
@@ -93,4 +94,4 @@
 
 - **P1.4 已跳过**：当前仍由各 Servlet 分别执行 Session 检查，尚未实施统一 Authentication Filter 和 CSRF Token 校验。
 - 当前可观测性范围不包含告警规则、Alertmanager、集中日志或多节点监控。
-- CI 的本地等价命令已完成 `42/42` 单元测试和 `21/21` 集成测试验证；GitHub Hosted Runner 首次运行仍待代码推送后确认，当前不包含 CD 自动部署。
+- CI 的本地等价命令已完成 `42/42` 单元测试和 `21/21` 集成测试验证；GitHub Hosted Runner 的 CI #1 已成功完成，当前不包含 CD 自动部署。

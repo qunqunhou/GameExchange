@@ -1,5 +1,7 @@
 # GameExchange
 
+[![CI](https://github.com/qunqunhou/GameExchange/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/qunqunhou/GameExchange/actions/workflows/ci.yml)
+
 ## 项目简介
 
 GameExchange 是一个基于 Java Servlet 的游戏虚拟经济交易项目，覆盖玩家注册登录、物品管理、市场交易、战斗结算、在线状态和业务统计。项目保留传统 WAR 部署方式，同时提供开发、生产和监控三套 Docker Compose 配置，用于展示从业务功能到可运行工程体系的完整演进过程。
@@ -200,7 +202,7 @@ Linux 或 macOS 使用 `./mvnw test`。集成测试类以 `*IT.java` 命名，�
 
 截至 2026-08-07，当前代码的单元测试结果为 `42/42` 通过，Testcontainers 集成测试为 `21/21` 通过，覆盖交易、战斗、玩家信息、在线人数查询、指标输出、数据库基线和 Migration 等关键边界。该数字是验证快照；后续新增测试时应同步更新。
 
-`.github/workflows/ci.yml` 会在 Push、Pull Request 或手动触发时执行同一条 Maven `verify` 命令。当前本地等价验证已经通过；GitHub Hosted Runner 的首次执行结果需在工作流随代码推送后确认，在此之前不添加构建状态徽章。
+`.github/workflows/ci.yml` 会在 Push、Pull Request 或手动触发时执行同一条 Maven `verify` 命令。当前本地等价验证已经通过；GitHub Hosted Runner 已于 2026-08-07 完成首次成功运行，详见 [CI #1](https://github.com/qunqunhou/GameExchange/actions/runs/31157605181)。最新状态以页面顶部的动态徽章为准。
 
 ## Docker Compose 开发环境
 
