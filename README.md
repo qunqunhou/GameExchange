@@ -1,12 +1,22 @@
 # GameExchange
 
 [![CI](https://github.com/qunqunhou/GameExchange/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/qunqunhou/GameExchange/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/qunqunhou/GameExchange?include_prereleases&label=release)](https://github.com/qunqunhou/GameExchange/releases/tag/v1.0.0-rc2)
 
 ## 项目简介
 
 GameExchange 是一个基于 Java Servlet 的游戏虚拟经济交易项目，覆盖玩家注册登录、物品管理、市场交易、战斗结算、在线状态和业务统计。项目保留传统 WAR 部署方式，同时提供开发、生产和监控三套 Docker Compose 配置，用于展示从业务功能到可运行工程体系的完整演进过程。
 
 当前实现面向单机部署，不宣称具备多实例高可用能力。未完成的认证、CSRF、CD 自动部署和 Kubernetes 能力会在“当前限制”中明确列出。
+
+## 当前发布
+
+- **版本**：[GameExchange 1.0.0-rc2](https://github.com/qunqunhou/GameExchange/releases/tag/v1.0.0-rc2)
+- **定位**：作品集技术预发布，不代表生产就绪。
+- **制品身份**：Annotated Tag `v1.0.0-rc2` 指向 Artifact Commit [`562b503`](https://github.com/qunqunhou/GameExchange/commit/562b503a911be996c5b96f6307413265ecdf4caa)。
+- **质量证据**：42 项单元测试和 21 项 Testcontainers 集成测试通过；GitHub Actions 的 Maven Verify 与 Docker Image Build 均通过。
+- **下载内容**：Release 提供确切 WAR、Artifact Manifest 和 `SHA256SUMS.txt`，用于复核下载制品身份。
+- **发布记录**：[Release Checklist](docs/releases/1.0.0-rc2/RELEASE_CHECKLIST.md) · [Release Approval](docs/releases/1.0.0-rc2/RELEASE_APPROVAL.md)
 
 ## 项目亮点
 
@@ -184,7 +194,7 @@ Linux 或 macOS 执行：
 target/GameExchange_war-1.0.0-rc2.war
 ```
 
-当前 `main` 生成 RC2 准备版本；已经冻结的 `v1.0.0-rc1` 标签、制品身份和验收记录保持不变。RC2 只有完成独立 Release Gate、人工审批和 Git Tag 后才能视为正式发布候选。
+当前 `main` 生成 `1.0.0-rc2` 版本。已经发布的 `v1.0.0-rc2` Tag 精确指向通过 Release Gate 的 Artifact Commit；下载发布制品时应通过 Release 中的 `SHA256SUMS.txt` 复核文件身份。
 
 前端通过 `vue/assets/js/app-config.js` 根据当前页面地址计算 `BASE_PATH`，静态资源使用相对路径，API 统一通过 `window.GE_API()` 生成。因此 WAR 可以使用其他名称，也可以部署为 `ROOT.war`，不需要修改 HTML。
 

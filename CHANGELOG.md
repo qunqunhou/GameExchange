@@ -1,6 +1,6 @@
 # 变更日志
 
-本文件记录 GameExchange 已经实施的工程化变更。尚未纳入版本的变化记录在 `Unreleased` 下，发布候选版本单独记录。
+本文件记录 GameExchange 已经实施的工程化变更。版本级摘要按发布时间倒序记录，跨阶段的实施细节保留在“工程化演进明细”中。
 
 记录原则：
 
@@ -8,6 +8,32 @@
 - 不补写无法确认的早期开发历史。
 - 不在变更记录中保存凭据、服务器地址或其他敏感信息。
 - 形成发布候选或正式版本后，在带日期的版本章节中记录对应内容。
+
+## [1.0.0-rc2] - 2026-08-08
+
+### 新增
+
+- 新增单 ECS 生产部署基线，覆盖 Docker Compose、宿主机 Nginx、文件型 Secret、ESSD 数据目录、备份和回滚边界。
+- 新增 Micrometer JVM 与业务指标、Prometheus、Node Exporter 和 Grafana，并自动加载包含 11 个面板的业务 Dashboard。
+- 新增 GitHub Actions Maven `verify` 与 Docker 镜像构建门禁；CI 不登录 Registry、不推送镜像且不执行部署。
+- 新增 GitHub Pre-release，归档 Gate 生成的确切 WAR、Artifact Manifest 和 `SHA256SUMS.txt`。
+
+### 变更
+
+- 将 `actions/setup-java` 升级到 v5，并完成 CI 状态验收。
+- 完善根目录 README、部署手册、监控手册和文档索引，统一记录运行边界与排错入口。
+- 项目版本更新为 `1.0.0-rc2`，Annotated Tag `v1.0.0-rc2` 精确指向 Artifact Commit `562b503a911be996c5b96f6307413265ecdf4caa`。
+
+### 验证
+
+- Release Gate 通过：42 项单元测试和 21 项 Testcontainers 集成测试全部成功。
+- Docker Runtime、非 root 用户、HTTP Smoke、重启恢复、数据卷复用和隔离资源清理验证通过。
+- GitHub Actions [Run #5](https://github.com/qunqunhou/GameExchange/actions/runs/31192652702) 的 Maven Verify 与 Docker Image Build 均通过。
+
+### 发布边界
+
+- RC2 仅作为作品集技术预发布，不代表生产就绪。
+- `KL-01` 至 `KL-09` 已由 Risk Owner 接受，但对应能力并未因此完成生产验证；详见 [RC2 Release Checklist](docs/releases/1.0.0-rc2/RELEASE_CHECKLIST.md)。
 
 ## [1.0.0-rc1] - 2026-08-01
 
@@ -22,7 +48,9 @@
 - 增加 Release Gate 自动化。
 - 增加 Artifact Identity 追踪及 WAR、Image、Migration 制品验证。
 
-## [Unreleased]
+## 工程化演进明细
+
+以下内容保留跨阶段的详细实施记录，用于追踪项目演进；它不表示这些变更仍处于未发布状态。
 
 ### 新增
 
@@ -96,3 +124,6 @@
 - **P1.4 已跳过**：当前仍由各 Servlet 分别执行 Session 检查，尚未实施统一 Authentication Filter 和 CSRF Token 校验。
 - 当前可观测性范围不包含告警规则、Alertmanager、集中日志或多节点监控。
 - CI 的本地等价命令已完成 `42/42` 单元测试、`21/21` 集成测试和 Docker 镜像构建验证；当前不包含 Registry 自动发布或 CD 自动部署。
+
+[1.0.0-rc2]: https://github.com/qunqunhou/GameExchange/releases/tag/v1.0.0-rc2
+[1.0.0-rc1]: https://github.com/qunqunhou/GameExchange/tree/v1.0.0-rc1
