@@ -39,6 +39,33 @@ P3.1-A 同时记录无域名条件下的私有验证路径。SSH Tunnel 只用�
 
 Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置已经使用 `127.0.0.1:3000:3000`，因此 ECS 实际状态属于部署配置漂移，不应通过放宽安全组或继续沿用旧 Compose 掩盖。Nginx `80` 监听属于域名模式入口；在无域名验证模式下应停用对应站点或服务。任何服务器变更都必须单独批准，并在变更前确认现有服务用途、保存配置和制定回退步骤。
 
+### 1.2 P3.1-B ECS 整改与最终复审记录
+
+复审日期：`2026-08-08`。Overall Status：`READY_FOR_ACR_PUSH_REVIEW`。P3.1-A 的原始审计结果保留为历史快照；本节记录其后逐项批准、实施和验证的整改，不回写或覆盖原始证据。
+
+| 步骤 | 整改与验证结果 | 状态 |
+| --- | --- | --- |
+| P3.1-B1 阻断项复核 | 确认风险来自公网入口、安全组边界、特权账号模型和 ECS 运行配置漂移，未通过放宽网络规则掩盖问题 | `PASSED` |
+| P3.1-B2 安全组收敛 | 无域名模式的公网入方向仅允许可信管理地址 `/32` 访问 `22/tcp`；ECS 外部复核确认 `80/3000/3389` 不可连接 | `PASSED` |
+| P3.1-B3 运维账号 | 使用普通账号 `smzhiman` 和带口令保护的 Ed25519 密钥；账号属于 `sudo` 组但不属于 `docker` 组，直接访问 Docker 被拒绝，`sudo docker` 正常 | `PASSED` |
+| P3.1-B4 SSH 加固 | `PermitRootLogin no`、`PasswordAuthentication no`、`KbdInteractiveAuthentication no`、`PubkeyAuthentication yes` 已生效；配置语法、服务重载、公钥正向测试及 root/密码负向测试均通过 | `PASSED` |
+| P3.1-B5 入口收敛 | Nginx 已停用且不再监听 `80`；Grafana Compose 保留回退副本并改为只发布 `127.0.0.1:3000`，配置校验和健康检查通过 | `PASSED` |
+| P3.1-B6 最终只读复审 | 普通账号、SSH、数据盘、Docker、监听端口及 App/Grafana/Prometheus 健康检查再次通过 | `PASSED` |
+
+最终复审证据如下：
+
+| 检查项 | 最终结果 |
+| --- | --- |
+| 账号权限 | `uid=1000(smzhiman)`，属于 `sudo` 组且不属于 `docker` 组 |
+| SSH 生效配置 | 禁止 root、密码和键盘交互认证，只允许公钥认证 |
+| Nginx | `disabled` 且 `inactive`，未发现 `80` 监听 |
+| 数据盘 | `/dev/vdb` 以 ext4、读写模式挂载到 `/data`；`/etc/fstab` 已按匹配 UUID 配置 `defaults,nofail 0 2` |
+| Docker | Client/Server `29.7.1`，Docker Compose `v5.3.1` |
+| 业务与观测端口 | App `127.0.0.1:8080`、Grafana `127.0.0.1:3000`、Prometheus `127.0.0.1:9090`；未发现宿主机 `3306` 监听 |
+| 健康检查 | App 静态配置可访问；Grafana `12.1.0` 数据库状态为 `ok`；Prometheus 返回 `Prometheus Server is Ready.` |
+
+`READY_FOR_ACR_PUSH_REVIEW` 只表示 ECS 前置阻断项已经关闭，可以进入 ACR Push 的方案设计和审批。该状态不授权登录 ACR、推送镜像、修改生产 Compose 或部署 RC2，也不表示生产就绪。当前仍无正式域名和可信 TLS，仅允许 SSH Tunnel 私有验证；单 ECS 单点、UFW 未启用、外部探测、备份恢复演练和生产容量尚未完成，仍属于后续独立 Milestone 的验收范围。
+
 ## 2. 已批准的 RC2 制品边界
 
 部署验证必须使用已经通过 Release Gate 的 RC2 制品，不得在 ECS 上执行 Maven 构建或 `docker build`。
