@@ -4,25 +4,56 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 适用版本 | `GameExchange 1.0.0-rc1` |
+| 适用版本 | `GameExchange 1.0.0-rc2` |
 | 部署形态 | 单台阿里云 ECS，宿主机 Nginx，Docker Compose 运行 App 与 MySQL，MySQL 目录绑定到 ESSD |
 | 文档目标 | 建立可部署、可验证、可回滚的低流量生产基线 |
 | 非目标 | 高可用、自动扩缩容、Redis、Kubernetes、CI/CD、生产压测 |
+| 已确认资源 | Ubuntu 22.04、`x86_64` ECS、独立数据盘、杭州个人版 ACR |
+| 当前入口条件 | 尚无正式域名；P3.1 仅允许 SSH Tunnel 私有验证，不启用公网 HTTP/HTTPS |
 
 本文档只定义 Phase 6.1-A 的生产部署基线。单 ECS 仍然存在节点级单点故障，不能据此宣称系统已经具备高可用能力。有明确 SLA、不可接受停机或不可接受本地数据库丢失风险时，应停止使用本方案，并单独设计 ECS + SLB + RDS 或其他高可用架构。
 
-## 2. 已批准的 RC1 制品边界
+P3.1-A 同时记录无域名条件下的私有验证路径。SSH Tunnel 只用于验证 ACR、ECS、App、MySQL 和数据盘链路，不替代正式域名、可信 TLS、外部探测、备份恢复或生产验收。
 
-生产部署必须使用已经通过 Release Gate 的 RC1 制品，不得在 ECS 上执行 Maven 构建或 `docker build`。
+### 1.1 P3.1-A ECS 只读审计记录
+
+审计日期：`2026-08-08`。Overall Status：`BLOCKED`。以下结果来自 ECS 上实际执行的只读命令；`BLOCKED` 表示必须先完成运行配置收敛和再次验证，禁止继续 ACR Push 或 RC2 部署。
+
+| 检查项 | 实际结果 | 状态 |
+| --- | --- | --- |
+| 操作系统 | Ubuntu `22.04.5 LTS (Jammy Jellyfish)` | `PASSED` |
+| CPU 架构 | `x86_64`，与 RC2 `linux/amd64` 镜像一致 | `PASSED` |
+| Docker Engine | Client/Server `29.7.1` | `PASSED` |
+| Docker Compose | `v5.3.1` | `PASSED` |
+| Docker Security Options | AppArmor、Seccomp `builtin`、Cgroup Namespace；未发现 User Namespace Remapping | `PASSED` |
+| Docker 服务 | `enabled` 且 `active` | `PASSED` |
+| 独立数据盘 | `/dev/vdb`，ext4，约 `40G`，挂载到 `/data` | `PASSED` |
+| App 端口 | Docker Proxy 只监听 `127.0.0.1:8080` | `PASSED` |
+| Prometheus 端口 | Docker Proxy 只监听 `127.0.0.1:9090` | `PASSED` |
+| MySQL 端口 | 未发现宿主机 `3306` 监听 | `PASSED` |
+| Nginx 端口 | `0.0.0.0:80` 和 `[::]:80` 监听；当前无域名和 TLS | `BLOCKED` |
+| Grafana 端口 | Docker Proxy 在 `0.0.0.0:3000` 和 `[::]:3000` 监听，与仓库当前 `127.0.0.1:3000` 配置不一致 | `BLOCKED` |
+| 部署账号模型 | 当前会话直接使用 `root`，系统未安装 `sudo`，不符合普通运维账号加受控 `sudo` 的基线 | `BLOCKED` |
+| 阿里云安全组 | 宿主机证据不能证明公网入方向规则，需在控制台单独核对 | `PENDING` |
+| 数据盘持久挂载 | 当前挂载正常，但尚未核对 `/etc/fstab` 是否按 UUID 配置重启挂载 | `PENDING` |
+
+Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置已经使用 `127.0.0.1:3000:3000`，因此 ECS 实际状态属于部署配置漂移，不应通过放宽安全组或继续沿用旧 Compose 掩盖。Nginx `80` 监听属于域名模式入口；在无域名验证模式下应停用对应站点或服务。任何服务器变更都必须单独批准，并在变更前确认现有服务用途、保存配置和制定回退步骤。
+
+## 2. 已批准的 RC2 制品边界
+
+部署验证必须使用已经通过 Release Gate 的 RC2 制品，不得在 ECS 上执行 Maven 构建或 `docker build`。
 
 | 制品 | 已批准身份 |
 | --- | --- |
-| Git Tag | `v1.0.0-rc1` |
-| Artifact Commit | `6cc2c88dd01bd6aea29f4e58d591031e6275079e` |
-| WAR | `target/GameExchange_war-1.0.0-rc1.war` |
-| WAR SHA-256 | `C27AF41FC6B52C842E7AD687F1B6C176DEB1A88558E41C6BBCBF24A4D758F452` |
-| 已验证本地镜像 | `gameexchange-rc:1.0.0-rc1-6cc2c88dd01b-20260801-194735-296-859df335` |
-| 已验证镜像 ID | `sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2` |
+| Git Tag | `v1.0.0-rc2` |
+| Artifact Commit | `562b503a911be996c5b96f6307413265ecdf4caa` |
+| WAR | `target/GameExchange_war-1.0.0-rc2.war` |
+| WAR SHA-256 | `45E0A9B7EC2AF012A5E636527CF2A2C9A675667E3E7D4BAF556665BE9AAED8F6` |
+| Artifact Manifest | `release-manifest-1.0.0-rc2.json` |
+| Manifest SHA-256 | `8CC3821C2622556849CBE4A02363EEEA1F2C4925ABDA4160349F96B561E5F3EA` |
+| 已验证本地镜像 | `gameexchange-rc:1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13` |
+| 已验证镜像 ID | `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` |
+| ACR 目标仓库 | `crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange` |
 | 新环境 Schema SHA-256 | `F915D672C7C6DD3F9CB0E4B96B96F9E936198E264A69CB1EC52B541F268C5541` |
 
 ACR 的 Registry Manifest Digest 与本地镜像 ID 是不同层次的标识。发布到 ACR 后，应先按 Digest 拉取，再确认拉取结果的镜像 ID 仍等于上述已验证镜像 ID。`docker-compose.prod.yaml` 的 `APP_IMAGE` 必须使用 `registry/repository@sha256:<digest>`，不能使用可移动的 `latest` 或普通 Tag。
@@ -33,20 +64,31 @@ ACR 的 Registry Manifest Digest 与本地镜像 ID 是不同层次的标识。�
 flowchart LR
     user["用户 / DNS"] --> sg["ECS 安全组：80、443"]
     sg --> nginx["宿主机 Nginx：TLS 终止"]
-    nginx --> app["RC1 App：127.0.0.1:8080"]
+    nginx --> app["RC2 App：127.0.0.1:8080"]
     app --> mysql["MySQL 8.4：Compose 内部网络"]
     mysql --> volume["ESSD 挂载目录：/data/gameexchange/mysql"]
     acr["ACR：不可变镜像 Digest"] -.-> app
     volume -.-> backup["加密离机备份 / OSS"]
 ```
 
+以上是具备正式域名后的生产入口。当前无域名验证使用以下私有路径：
+
+```mermaid
+flowchart LR
+    operator["本机浏览器 / curl"] --> tunnel["SSH Tunnel：本机 18080"]
+    tunnel --> app["ECS 127.0.0.1:8080"]
+    app --> mysql["MySQL 8.4：Compose 内部网络"]
+    acr["杭州 ACR：不可变镜像 Digest"] -.-> app
+    mysql --> volume["独立数据盘：/data/gameexchange/mysql"]
+```
+
 ### 3.1 组件职责
 
 | 组件 | 职责 | 边界 |
 | --- | --- | --- |
-| ECS 安全组 | 控制进入主机的网络流量 | 公网只开放 `80/443`；`22` 只允许可信管理地址 |
-| 宿主机 Nginx | TLS、HTTP 到 HTTPS 跳转、反向代理、基础安全响应头 | 不直接访问 MySQL，不保存应用密码 |
-| App 容器 | 运行已批准 RC1 镜像 | 只发布到宿主机 `127.0.0.1:8080` |
+| ECS 安全组 | 控制进入主机的网络流量 | 域名模式开放 `80/443`；无域名模式只允许可信管理地址访问 `22` |
+| 宿主机 Nginx | TLS、HTTP 到 HTTPS 跳转、反向代理、基础安全响应头 | 仅域名模式启用；不直接访问 MySQL，不保存应用密码 |
+| App 容器 | 运行已批准 RC2 镜像 | 只发布到宿主机 `127.0.0.1:8080` |
 | MySQL 容器 | 保存业务数据 | 不发布宿主机端口，只允许 Compose 内部网络访问 |
 | ESSD Bind Mount | 保存 MySQL 数据目录 | Compose 强制读取 `MYSQL_DATA_DIR`，并绑定到 `/var/lib/mysql` |
 | ACR | 分发已批准镜像 | 生产引用 Registry Digest，不使用可移动 Tag |
@@ -62,8 +104,8 @@ flowchart LR
 
 - Linux x86_64 ECS，建议从 `2 vCPU / 8 GiB` 内存开始。
 - 使用 ESSD 或等价数据盘，并将其持久挂载到 `/data`；MySQL 固定使用 `/data/gameexchange/mysql`。
-- 配置固定公网入口和正式域名解析。
-- 安全组公网入方向只允许 `80/tcp`、`443/tcp`。
+- 正式生产入口需要固定公网地址和正式域名解析；无域名 P3.1 验证不启用公网业务入口。
+- 域名模式的安全组公网入方向只允许 `80/tcp`、`443/tcp`；无域名模式保持这两个端口关闭。
 - `22/tcp` 只允许公司出口 IP、堡垒机或其他受控管理入口。
 - 不开放 `8080/tcp`、`3306/tcp`。
 - Docker Engine、Docker Compose v2 和 `jq` 应按目标 Linux 发行版的官方安装方法安装，并在部署前记录版本。
@@ -102,7 +144,7 @@ ECS 使用一个普通运维账号登录，该账号只通过受控 `sudo` 执�
 - 所有 ECS 上的 Docker/Compose 命令都使用 `sudo docker ...`。
 - `prod.env` 由 `root:root` 持有并使用 `0600`，与 Compose 执行用户一致。
 - `mysql_root_password` 由 `root:root` 持有并使用 `0600`。
-- `mysql_app_password` 由 `root:10001` 持有并使用 `0640`，使 RC1 App 的固定 GID `10001` 只能读取该文件。
+- `mysql_app_password` 由 `root:10001` 持有并使用 `0640`，使 RC2 App 的固定 GID `10001` 只能读取该文件。
 - 不使用 Compose Secret 的 `uid/gid/mode` 声明代替宿主机权限；文件型 Secret 底层是 Bind Mount，必须验证真实宿主机权限。
 
 若 Docker daemon 启用了 User Namespace Remapping，宿主机 GID `10001` 可能不再对应容器 GID `10001`。此时必须根据实际映射重新设计权限并完成容器内读取验证，不能直接套用以下命令。
@@ -136,13 +178,14 @@ sudo stat -c '%u:%g %a %n' \
 
 ## 6. 发布已批准镜像到 ACR
 
-本步骤在仍保存已验证 RC1 镜像的发布工作站执行。不要重新构建镜像。
+本步骤在仍保存已验证 RC2 镜像的发布工作站执行。不要重新构建镜像。
 
 ```bash
-APPROVED_SOURCE_IMAGE="gameexchange-rc:1.0.0-rc1-6cc2c88dd01b-20260801-194735-296-859df335"
-ACR_REGISTRY="registry.example.com"
-ACR_TAG="registry.example.com/namespace/gameexchange:1.0.0-rc1"
-ACR_DIGEST_REF="registry.example.com/namespace/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
+APPROVED_SOURCE_IMAGE="gameexchange-rc:1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13"
+ACR_REGISTRY="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com"
+ACR_REPOSITORY="$ACR_REGISTRY/smzhiman/gameexchange"
+ACR_TAG="$ACR_REPOSITORY:1.0.0-rc2"
+ACR_DIGEST_REF="$ACR_REPOSITORY@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
 
 read -r -p "ACR username: " ACR_USERNAME
 read -r -s -p "ACR password or temporary token: " ACR_PASSWORD
@@ -158,12 +201,12 @@ docker pull "$ACR_DIGEST_REF"
 docker image inspect "$ACR_DIGEST_REF" --format '{{.Id}}'
 ```
 
-`registry.example.com/namespace` 只是格式示例，必须替换成实际 ACR 地址和命名空间。`REPLACE_WITH_REGISTRY_MANIFEST_DIGEST` 必须替换为 ACR Push 结果或 ACR 控制台记录的完整 64 位十六进制 Digest。
+ACR 地址、命名空间和 `gameexchange` 私有仓库已经由资源清单确认；仓库列表截图只能证明仓库存在，不能证明其中镜像属于 RC2。`REPLACE_WITH_REGISTRY_MANIFEST_DIGEST` 必须替换为本次 ACR Push 结果或 ACR 控制台记录的完整 64 位十六进制 Digest。
 
 发布前后的 `docker image inspect` 都必须返回：
 
 ```text
-sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2
+sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4
 ```
 
 不一致时必须停止部署，检查是否推送了错误镜像、发生了重新构建或引用了多架构 Manifest 中的其他平台镜像。
@@ -173,7 +216,7 @@ sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2
 ECS 必须使用组织批准的最小权限 ACR 拉取身份。优先使用可轮换的临时凭据或组织统一的 Registry Credential Helper；若当前只能使用账号密码，则凭据必须来自密码管理器，并通过标准输入传给以 root 运行的 Docker CLI：
 
 ```bash
-ACR_REGISTRY="registry.example.com"
+ACR_REGISTRY="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com"
 read -r -p "ACR pull username: " ACR_PULL_USERNAME
 read -r -s -p "ACR pull password or temporary token: " ACR_PULL_PASSWORD
 printf '\n'
@@ -187,13 +230,14 @@ unset ACR_PULL_PASSWORD
 登录后按不可变 Digest 拉取并核对镜像 ID：
 
 ```bash
-sudo docker pull "registry.example.com/namespace/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
+ACR_IMAGE="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
+sudo docker pull "$ACR_IMAGE"
 sudo docker image inspect \
-  "registry.example.com/namespace/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST" \
+  "$ACR_IMAGE" \
   --format '{{.Id}}'
 ```
 
-镜像 ID 必须等于 `sha256:bae834eaf90a8dbb15a154524f0ace9ae8b4e5247469f39b8f9d333e35703ba2`。
+镜像 ID 必须等于 `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4`。
 
 ### 6.2 ACR 凭据轮换
 
@@ -211,7 +255,7 @@ sudo docker image inspect \
 `/opt/gameexchange/config/prod.env` 只保存非敏感变量：
 
 ```dotenv
-APP_IMAGE=registry.example.com/namespace/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST
+APP_IMAGE=crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST
 MYSQL_USER=gameexchange_app
 MYSQL_DATA_DIR=/data/gameexchange/mysql
 SECRETS_DIR=/opt/gameexchange/secrets
@@ -279,6 +323,8 @@ F915D672C7C6DD3F9CB0E4B96B96F9E936198E264A69CB1EC52B541F268C5541
 
 ### 7.4 Nginx、证书与自动续期
 
+本节只适用于已经准备正式域名的模式。当前无域名 P3.1 验证不得启用仓库中的 Nginx 配置，因为其中的域名和证书路径尚不成立。
+
 1. 把 `deploy/nginx/gameexchange.conf` 中的 `gameexchange.example.com` 全部替换为正式域名。
 2. DNS 应先解析到 ECS 公网入口。
 3. 在启用该配置前获取正式证书，例如使用证书客户端的 Standalone 模式；证书必须存在于配置声明的路径。
@@ -321,6 +367,23 @@ Nginx 官方反向代理与 TLS 参考：
 - <https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/>
 - <https://docs.nginx.com/nginx/admin-guide/security-controls/terminating-ssl-http/>
 
+### 7.5 无域名 SSH Tunnel 验证模式
+
+无域名时不使用裸公网 HTTP、自签名证书或临时第三方域名模拟生产 TLS。ECS 安全组只允许可信管理地址访问 `22/tcp`，保持 `80/443/8080/3306` 关闭；App 继续只绑定 `127.0.0.1:8080`。
+
+App 和 MySQL 健康后，由用户在本机终端建立隧道：
+
+```bash
+ssh -N \
+  -o ExitOnForwardFailure=yes \
+  -L 18080:127.0.0.1:8080 \
+  <ops-user>@<ecs-public-ip>
+```
+
+该命令不提供远程 Shell，只把本机 `127.0.0.1:18080` 通过 SSH 加密连接到 ECS 回环地址。SSH 私钥、密码和公网 IP 不写入仓库；本机 `18080` 已被占用时应选择另一个未使用端口。
+
+验证完成前不得使用真实生产账号或真实个人数据。SSH Tunnel 证明私有访问链路可用，但不证明公网 DNS、TLS 证书、Nginx、外部监控或生产容量已经通过。
+
 ## 8. 首次部署步骤
 
 以下关键操作由部署人员在 ECS 上执行并保存输出，AI 负责复核结果。
@@ -330,13 +393,12 @@ Nginx 官方反向代理与 TLS 参考：
 ```bash
 sudo docker version
 sudo docker compose version
-nginx -v
 sudo systemctl is-enabled docker
 sudo systemctl is-active docker
 sudo ss -lntp
 ```
 
-确认 `80`、`443`、`8080` 没有被未知进程占用，`3306` 没有公网监听。
+域名模式还需执行 `nginx -v`。确认 `8080` 没有被未知进程占用、`3306` 没有公网监听；无域名模式不要求安装或启动 Nginx，并保持 `80/443` 关闭。
 
 ### 8.2 验证 Secret 和数据盘
 
@@ -350,7 +412,7 @@ findmnt -T /data/gameexchange/mysql
 df -hT /data/gameexchange/mysql
 ```
 
-先完成 Compose 渲染和 App Digest 拉取，再验证 RC1 App 容器的真实 Secret 可见性：
+先完成 Compose 渲染和 App Digest 拉取，再验证 RC2 App 容器的真实 Secret 可见性：
 
 ```bash
 sudo docker compose \
@@ -406,7 +468,9 @@ sudo docker compose \
 
 预期 MySQL 和 App 最终都显示 `healthy`。未达到健康状态时，先查看对应服务日志，不得继续启用公网流量。
 
-### 8.5 启用 Nginx
+### 8.5 启用 Nginx（仅域名模式）
+
+无域名 P3.1 验证跳过本节，不复制或启用 `deploy/nginx/gameexchange.conf`。
 
 ```bash
 sudo nginx -t
@@ -430,9 +494,9 @@ APP_IMAGE="$(sudo sed -n 's/^APP_IMAGE=//p' /opt/gameexchange/config/prod.env)"
 sudo docker image inspect "$APP_IMAGE" --format '{{.Id}}'
 ```
 
-镜像 ID 必须等于 RC1 已批准镜像 ID。不要只核对 Tag 名称。
+镜像 ID 必须等于 RC2 已批准镜像 ID。不要只核对 Tag 名称。
 
-### 9.2 HTTP 与 HTTPS
+### 9.2 域名与 HTTPS（仅域名模式）
 
 ```bash
 PRODUCTION_DOMAIN="gameexchange.example.com"
@@ -450,23 +514,39 @@ curl --fail --show-error --silent "https://$PRODUCTION_DOMAIN/stats"
 - `/stats` 返回 HTTP `200`，响应中的业务 `code` 为 `200`。
 - 浏览器证书链有效，域名匹配，不出现 Mixed Content。
 
+#### 9.2.1 无域名 SSH Tunnel 验证
+
+保持 SSH Tunnel 运行，在本机另一个终端执行：
+
+```bash
+curl --fail --show-error --silent \
+  "http://127.0.0.1:18080/vue/login.html" > /dev/null
+curl --fail --show-error --silent \
+  "http://127.0.0.1:18080/vue/assets/js/app-config.js" > /dev/null
+curl --fail --show-error --silent \
+  "http://127.0.0.1:18080/stats" \
+  | jq -e '.code == 200'
+```
+
+三个命令必须全部返回 Exit Code `0`。浏览器只访问 `http://127.0.0.1:18080/`；HTTP 明文只存在于本机和 ECS 回环接口，跨公网的数据由 SSH 加密。该结果不得记录为 HTTPS、证书链或公网可用性验证通过。
+
 ### 9.3 网络暴露
 
 ```bash
 sudo ss -lntp
 ```
 
-宿主机应看到 Nginx 监听 `80/443`，应用只监听 `127.0.0.1:8080`。还应从 ECS 外部确认 `8080`、`3306` 无法连接，不能只依赖主机本地结果。
+域名模式下，宿主机应看到 Nginx 监听 `80/443`，应用只监听 `127.0.0.1:8080`。无域名模式下不应存在业务公网监听，安全组只向可信管理地址开放 `22`。两种模式都必须从 ECS 外部确认 `8080`、`3306` 无法连接，不能只依赖主机本地结果。
 
 ### 9.4 重启恢复
 
-在维护窗口内分别验证 Docker daemon 重启和 ECS 重启。每次重启后检查容器健康、HTTPS、数据库数据和 Nginx 状态。`restart: unless-stopped` 不会自动恢复被管理员手动停止的容器，这是预期行为。
+在维护窗口内分别验证 Docker daemon 重启和 ECS 重启。每次重启后检查容器健康、数据库数据以及当前入口模式的 Smoke Test；域名模式还要检查 HTTPS 和 Nginx。`restart: unless-stopped` 不会自动恢复被管理员手动停止的容器，这是预期行为。
 
 ### 9.5 独立业务探测
 
 App 的 Docker Healthcheck 继续请求静态资源，它只判断 Tomcat 和 WAR 是否存活，不承担数据库 Readiness 检查。不得把 `/stats` 直接改成 Docker Healthcheck，因为该接口执行多条数据库查询，且业务失败时可能仍返回 HTTP `200`。
 
-生产环境必须使用独立外部探测同时检查 HTTP 状态和 JSON 业务码，ECS 需准备 `jq`：
+域名模式必须使用独立外部探测同时检查 HTTP 状态和 JSON 业务码，ECS 需准备 `jq`：
 
 ```bash
 PRODUCTION_DOMAIN="gameexchange.example.com"
@@ -477,6 +557,8 @@ curl --fail --show-error --silent --max-time 10 \
 ```
 
 探测至少每分钟执行一次，连续 3 次失败后告警。告警必须包含 HTTP 结果、JSON 解析结果、Nginx 状态、App 状态和 MySQL 状态。业务探测失败只触发告警与排查，不直接执行无限重启，避免数据库故障引发重启循环。
+
+无域名验证只能通过 SSH Tunnel 执行人工或受控本机探测，不能据此宣称已经建立公网外部监控。
 
 ## 10. 备份与恢复
 
@@ -505,7 +587,7 @@ sudo docker compose \
 
 ### 10.2 恢复演练
 
-恢复演练必须使用隔离目录、隔离网络和临时容器，禁止连接或挂载 `/data/gameexchange/mysql`。演练只使用已经存在的 MySQL 8.4 镜像和 RC1 App Digest，不构建任何新镜像。
+恢复演练必须使用隔离目录、隔离网络和临时容器，禁止连接或挂载 `/data/gameexchange/mysql`。演练只使用已经存在的 MySQL 8.4 镜像和 RC2 App Digest，不构建任何新镜像。
 
 #### 10.2.1 创建隔离恢复环境
 
@@ -599,7 +681,7 @@ SQL
 
 把表清单和行数与备份时间点的生产证据对比。表缺失、字符集不符、关键行数异常或约束缺失时，恢复演练判定失败。
 
-#### 10.2.5 使用 RC1 App 验证恢复库
+#### 10.2.5 使用 RC2 App 验证恢复库
 
 ```bash
 APP_IMAGE="$(sudo sed -n 's/^APP_IMAGE=//p' /opt/gameexchange/config/prod.env)"
@@ -670,7 +752,7 @@ esac
 3. 只修改 `APP_IMAGE`。
 4. 执行 `sudo docker compose pull app`。
 5. 执行 `sudo docker compose up -d --no-deps app`。
-6. 等待 App `healthy`，完成 HTTPS 和业务 Smoke Test。
+6. 等待 App `healthy`，完成当前入口模式对应的业务 Smoke Test；域名模式还要完成 HTTPS 验证。
 
 ### 11.2 应用回滚
 
@@ -683,9 +765,9 @@ esac
 ## 12. 日志与基础观测
 
 - Compose 使用 `json-file` 日志轮转，避免单个容器日志无限增长。
-- Nginx Access/Error Log 位于 `/var/log/nginx/`。
+- 域名模式的 Nginx Access/Error Log 位于 `/var/log/nginx/`；无域名模式不启用 Nginx。
 - 应配置 ECS CPU、内存、磁盘使用率、磁盘 inode 和主机可用性告警。
-- 应配置 HTTPS 外部探测，探测登录页和静态资源。
+- 域名模式应配置 HTTPS 外部探测，探测登录页和静态资源；无域名验证不宣称具备公网探测。
 - 容器 `unhealthy` 不会触发 Docker 自动重启；健康检查与重启策略是两个独立机制。发现 `unhealthy` 时应告警并分析日志。
 
 Prometheus、Grafana 和集中日志不在 Phase 6.1-A 范围内，应在后续可观测性 Milestone 中设计。
@@ -694,12 +776,14 @@ Prometheus、Grafana 和集中日志不在 Phase 6.1-A 范围内，应在后续�
 
 | 检查项 | 验收条件 |
 | --- | --- |
-| 变更范围 | 只增加生产文档、生产 Compose 和 Nginx 配置 |
-| RC1 Artifact | WAR SHA-256 与已批准值一致；生产镜像 ID 与已批准值一致 |
+| P3.1-A 变更范围 | 只更新本部署文档；生产 Compose、Nginx 配置和应用代码保持不变 |
+| RC2 Artifact | WAR、Manifest SHA-256 与已批准值一致；部署镜像 ID 与已批准值一致 |
+| ACR | 使用已确认的杭州私有仓库；生产引用本次 Push 返回的不可变 Registry Digest |
 | 开发环境 | `compose.yaml` 保持不变 |
 | Compose | `docker compose config` 成功；不存在 `build` 和 Seed 挂载 |
-| Nginx | `nginx -t` 成功；HTTP 跳转 HTTPS；证书链有效 |
-| 网络 | 公网只开放 `80/443`；`8080/3306` 不可公网访问 |
+| Nginx | 仅域名模式启用；`nginx -t` 成功、HTTP 跳转 HTTPS、证书链有效 |
+| 无域名验证 | 通过 SSH Tunnel 访问本机 `127.0.0.1:18080`；不得声明 TLS 或公网可用性通过 |
+| 网络 | 域名模式公网只开放 `80/443`；无域名模式只向可信地址开放 `22`；`8080/3306` 始终不可公网访问 |
 | Secret | 密码不在 Git、普通环境文件、Compose 渲染输出或命令行参数中 |
 | 数据持久化 | MySQL Bind Mount 来源为 `/data/gameexchange/mysql`，且 `findmnt` 证明它位于 ESSD；重启后数据保持 |
 | 备份恢复 | 备份上传离机存储，并完成一次隔离恢复演练 |
