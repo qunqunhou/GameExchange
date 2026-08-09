@@ -224,11 +224,10 @@ ECS 使用一个普通运维账号登录，该账号只通过受控 `sudo` 执�
 ```bash
 sudo install -d -o root -g root -m 0750 /opt/gameexchange
 sudo install -d -o root -g root -m 0750 /opt/gameexchange/database
-sudo install -d -o root -g root -m 0700 /opt/gameexchange/config
 sudo install -d -o root -g root -m 0700 /opt/gameexchange/secrets
 sudo install -d -o root -g root -m 0700 /data/gameexchange/mysql
 
-sudo install -o root -g root -m 0600 /dev/null /opt/gameexchange/config/prod.env
+sudo install -o root -g root -m 0600 /dev/null /opt/gameexchange/prod.env
 sudo install -o root -g 10001 -m 0640 /dev/null /opt/gameexchange/secrets/mysql_app_password
 sudo install -o root -g root -m 0600 /dev/null /opt/gameexchange/secrets/mysql_root_password
 ```
@@ -239,7 +238,7 @@ sudo install -o root -g root -m 0600 /dev/null /opt/gameexchange/secrets/mysql_r
 
 ```bash
 sudo stat -c '%u:%g %a %n' \
-  /opt/gameexchange/config/prod.env \
+  /opt/gameexchange/prod.env \
   /opt/gameexchange/secrets/mysql_app_password \
   /opt/gameexchange/secrets/mysql_root_password
 ```
@@ -359,16 +358,15 @@ ECS 必须使用组织批准的最小权限 ACR 拉取身份。优先使用可�
 
 ### 7.1 非敏感环境文件
 
-`/opt/gameexchange/config/prod.env` 只保存非敏感变量：
+`/opt/gameexchange/prod.env` 只保存非敏感变量：
 
 ```dotenv
 APP_IMAGE=crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4
-MYSQL_USER=gameexchange_app
+MYSQL_USER=game_user
 MYSQL_DATA_DIR=/data/gameexchange/mysql
-SECRETS_DIR=/opt/gameexchange/secrets
 ```
 
-`APP_IMAGE` 使用 P3.2-A 已发布并完成拉回验证的真实不可变引用。该变量缺失时 Compose 会直接报错，防止误用开发镜像；密码不得写入该文件。
+`APP_IMAGE` 使用 P3.2-A 已发布并完成拉回验证的真实不可变引用。该变量缺失时 Compose 会直接报错，防止误用开发镜像；密码不得写入该文件。Secret 目录使用 Compose 的默认值 `/opt/gameexchange/secrets`，不需要在当前 ECS 环境文件中重复声明。线上保留的 `MYSQL_DATABASE=game_exchange` 是历史兼容键；当前 Compose 已固定数据库名，本 Runbook 不依赖该键。
 
 仅替换 Secret 文件不会修改 MySQL 中已经保存的账号密码。密码轮换必须在维护窗口内协调完成数据库账号修改、Secret 文件原子替换和 App 重建，并验证旧密码失效；不得只改文件后直接重启服务。
 
@@ -391,7 +389,7 @@ Compose 渲染后应确认 Bind Mount 来源：
 
 ```bash
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   config
 ```
@@ -400,7 +398,7 @@ sudo docker compose \
 
 ```bash
 MYSQL_CONTAINER_ID="$(sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   ps -q mysql)"
 
@@ -511,7 +509,7 @@ sudo ss -lntp
 
 ```bash
 sudo stat -c '%u:%g %a %n' \
-  /opt/gameexchange/config/prod.env \
+  /opt/gameexchange/prod.env \
   /opt/gameexchange/secrets/mysql_app_password \
   /opt/gameexchange/secrets/mysql_root_password
 
@@ -523,7 +521,7 @@ df -hT /data/gameexchange/mysql
 
 ```bash
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   run --rm --no-deps --entrypoint /bin/sh app -ec '
     test "$(id -u)" = "10001"
@@ -540,7 +538,7 @@ sudo docker compose \
 ```bash
 cd /opt/gameexchange
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f docker-compose.prod.yaml \
   config
 ```
@@ -558,17 +556,17 @@ sudo docker compose \
 
 ```bash
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   pull app
 
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   up -d
 
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   ps
 ```
@@ -593,11 +591,11 @@ sudo systemctl status nginx --no-pager
 
 ```bash
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   ps
 
-APP_IMAGE="$(sudo sed -n 's/^APP_IMAGE=//p' /opt/gameexchange/config/prod.env)"
+APP_IMAGE="$(sudo sed -n 's/^APP_IMAGE=//p' /opt/gameexchange/prod.env)"
 sudo docker image inspect "$APP_IMAGE" --format '{{.Id}}'
 ```
 
@@ -679,22 +677,23 @@ curl --fail --show-error --silent --max-time 10 \
 逻辑备份示例：
 
 ```bash
-sudo install -d -m 0700 /var/backups/gameexchange
+sudo install -d -o root -g root -m 0700 /var/backups/gameexchange
+sudo install -d -o root -g root -m 0700 /var/backups/gameexchange/database
 
 sudo docker compose \
-  --env-file /opt/gameexchange/config/prod.env \
+  --env-file /opt/gameexchange/prod.env \
   -f /opt/gameexchange/docker-compose.prod.yaml \
   exec -T mysql sh -ec \
   'MYSQL_PWD="$(cat /run/secrets/mysql_root_password)" exec mysqldump --user=root --single-transaction --routines --triggers --set-gtid-purged=OFF game_exchange' \
   | sudo gzip -c \
-  | sudo tee "/var/backups/gameexchange/game_exchange-$(date +%Y%m%d-%H%M%S).sql.gz" > /dev/null
+  | sudo tee "/var/backups/gameexchange/database/game_exchange-$(date +%Y%m%d-%H%M%S).sql.gz" > /dev/null
 ```
 
 备份完成后执行 `gzip -t`、记录 SHA-256，再上传离机存储。上传成功并完成保留策略核对前，不删除本地文件。
 
 ### 10.2 恢复演练
 
-恢复演练必须使用隔离目录、隔离网络和临时容器，禁止连接或挂载 `/data/gameexchange/mysql`。演练只使用已经存在的 MySQL 8.4 镜像和 RC2 App Digest，不构建任何新镜像。
+恢复演练必须使用隔离目录、隔离网络和临时容器，禁止连接或挂载 `/data/gameexchange/mysql`。演练只使用当前 ECS 已验证的不可变 ACR MySQL 8.4 镜像和 RC2 App Digest，不构建或拉取任何新镜像。
 
 #### 10.2.1 创建隔离恢复环境
 
@@ -704,10 +703,22 @@ RESTORE_ROOT="/data/gameexchange-restore/$RESTORE_RUN_ID"
 RESTORE_NETWORK="gameexchange-restore-$RESTORE_RUN_ID"
 RESTORE_MYSQL="gameexchange-restore-mysql-$RESTORE_RUN_ID"
 RESTORE_APP="gameexchange-restore-app-$RESTORE_RUN_ID"
-BACKUP_FILE="/var/backups/gameexchange/REPLACE_WITH_BACKUP_FILE.sql.gz"
+BACKUP_FILE="/var/backups/gameexchange/database/REPLACE_WITH_BACKUP_FILE.sql.gz"
+APPROVED_MYSQL_IMAGE_ID="sha256:870634c634aae968ea1a93e5c094a14e00c692da2ee9bed956b3dfcc7bd08cb0"
+APPROVED_APP_IMAGE_ID="sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4"
+MYSQL_IMAGE="$(sudo docker inspect gameexchange-prod-mysql-1 --format '{{.Config.Image}}')"
+MYSQL_IMAGE_ID="$(sudo docker image inspect "$MYSQL_IMAGE" --format '{{.Id}}')"
+MYSQL_RUNTIME_STATE="$(sudo docker inspect gameexchange-prod-mysql-1 --format '{{.State.Status}}/{{.State.Health.Status}}')"
+APP_IMAGE="$(sudo sed -n 's/^APP_IMAGE=//p' /opt/gameexchange/prod.env)"
+APP_IMAGE_ID="$(sudo docker image inspect "$APP_IMAGE" --format '{{.Id}}')"
 
 sudo test -f "$BACKUP_FILE"
 sudo gzip -t "$BACKUP_FILE"
+case "$MYSQL_IMAGE" in *@sha256:*) ;; *) echo "MySQL image is not digest-pinned" >&2; exit 1 ;; esac
+case "$APP_IMAGE" in *@sha256:*) ;; *) echo "App image is not digest-pinned" >&2; exit 1 ;; esac
+test "$MYSQL_RUNTIME_STATE" = "running/healthy"
+test "$MYSQL_IMAGE_ID" = "$APPROVED_MYSQL_IMAGE_ID"
+test "$APP_IMAGE_ID" = "$APPROVED_APP_IMAGE_ID"
 
 sudo install -d -o root -g root -m 0700 "$RESTORE_ROOT/mysql"
 sudo install -o root -g root -m 0600 /dev/null "$RESTORE_ROOT/mysql_root_password"
@@ -715,6 +726,7 @@ sudo install -o root -g 10001 -m 0640 /dev/null "$RESTORE_ROOT/mysql_app_passwor
 ```
 
 为演练生成两份新的临时随机密码，通过 `sudoedit` 分别写入上述文件。禁止复用生产数据库密码。确认 `RESTORE_ROOT` 位于 `/data/gameexchange-restore/`，且与生产目录 `/data/gameexchange/mysql` 完全不同。
+上述批准 Image ID 来自 P3.3-A1 对当前 ECS 运行基线的核对。任一镜像引用、Image ID 或 MySQL 健康状态不一致时必须停止演练；不得通过删除校验或允许自动拉取继续执行。
 
 #### 10.2.2 启动临时 MySQL 8.4
 
@@ -722,6 +734,7 @@ sudo install -o root -g 10001 -m 0640 /dev/null "$RESTORE_ROOT/mysql_app_passwor
 sudo docker network create --internal "$RESTORE_NETWORK"
 
 sudo docker run -d \
+  --pull never \
   --name "$RESTORE_MYSQL" \
   --network "$RESTORE_NETWORK" \
   --network-alias restore-mysql \
@@ -732,7 +745,7 @@ sudo docker run -d \
   -e MYSQL_USER=restore_app \
   -e MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql_root_password \
   -e MYSQL_PASSWORD_FILE=/run/secrets/mysql_app_password \
-  mysql:8.4@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6 \
+  "$MYSQL_IMAGE" \
   --character-set-server=utf8mb4 \
   --collation-server=utf8mb4_0900_ai_ci
 ```
@@ -791,10 +804,10 @@ SQL
 #### 10.2.5 使用 RC2 App 验证恢复库
 
 ```bash
-APP_IMAGE="$(sudo sed -n 's/^APP_IMAGE=//p' /opt/gameexchange/config/prod.env)"
 sudo docker image inspect "$APP_IMAGE" --format '{{.Id}}'
 
 sudo docker run -d \
+  --pull never \
   --name "$RESTORE_APP" \
   --network "$RESTORE_NETWORK" \
   -p 127.0.0.1:18080:8080 \
