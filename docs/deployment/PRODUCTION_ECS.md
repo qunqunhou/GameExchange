@@ -79,6 +79,21 @@ Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置�
 
 完整证据见 [ACR_PUBLICATION.md](../releases/1.0.0-rc2/ACR_PUBLICATION.md)。`READY_FOR_ECS_PULL_REVIEW` 只允许进入 ECS 拉取身份、Digest 拉取和部署配置的方案评审，不授权 ECS 登录 ACR、拉取镜像、修改生产 Compose 或部署 RC2。
 
+### 1.4 P3.2-B ECS Digest 拉取验证记录
+
+验证日期：`2026-08-09`。Overall Status：`READY_FOR_DEPLOY_CONFIG_REVIEW`。ECS 已使用隔离的临时 Docker CLI 配置按不可变 Digest 拉取批准镜像，运行中的旧 App 容器未被替换。
+
+| 检查项 | 实际结果 | 状态 |
+| --- | --- | --- |
+| 拉取前置条件 | `x86_64`、时间同步、Docker Client/Server `29.7.1`；Docker Root 所在文件系统剩余约 `31G` | `PASSED` |
+| ACR 网络 | DNS 解析成功，未认证 `/v2/` 返回预期 `401` | `PASSED` |
+| 认证失败保护 | 首次凭据输入不匹配时 login 返回 `unauthorized`，未执行 Pull，临时配置完成清理 | `PASSED` |
+| Digest 拉取 | 拉取后 Image ID 为 `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4`，平台为 `linux/amd64` | `PASSED` |
+| 无部署验证 | 运行中的 App 仍使用旧 Image ID `sha256:fba59bd644daab0be7bd68980977bc3d38c36ab78ab1859370a957feeb7c000c`，状态为 `healthy` | `PASSED` |
+| 凭据隔离 | 临时 `/run/gameexchange-acr-pull.*` 目录已删除，`/root/.docker/config.json` 内容未变化 | `PASSED` |
+
+完整证据见 [ECS_PULL_VERIFICATION.md](../releases/1.0.0-rc2/ECS_PULL_VERIFICATION.md)。`READY_FOR_DEPLOY_CONFIG_REVIEW` 只允许进入生产配置准备、Compose 渲染和回滚方案评审；镜像已存在于 ECS 不代表已经授权修改配置、重建容器或部署 RC2。
+
 ## 2. 已批准的 RC2 制品边界
 
 部署验证必须使用已经通过 Release Gate 的 RC2 制品，不得在 ECS 上执行 Maven 构建或 `docker build`。
@@ -257,38 +272,71 @@ sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4
 
 ### 6.1 ECS 拉取授权
 
-ECS 必须使用组织批准的最小权限 ACR 拉取身份。优先使用可轮换的临时凭据或组织统一的 Registry Credential Helper；若当前只能使用账号密码，则凭据必须来自密码管理器，并通过标准输入传给以 root 运行的 Docker CLI：
+ECS 必须使用组织批准的最小权限 ACR 拉取身份。优先使用可轮换的临时凭据或组织统一的 Registry Credential Helper；若当前只能使用账号密码，则凭据必须来自密码管理器，并通过标准输入传给以 root 运行的 Docker CLI。一次性人工发布必须使用 root-only 临时 `--config`，避免覆盖现有 `/root/.docker/config.json`：
 
 ```bash
-ACR_REGISTRY="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com"
-read -r -p "ACR pull username: " ACR_PULL_USERNAME
-read -r -s -p "ACR pull password or temporary token: " ACR_PULL_PASSWORD
-printf '\n'
-printf '%s' "$ACR_PULL_PASSWORD" \
-  | sudo docker login "$ACR_REGISTRY" --username "$ACR_PULL_USERNAME" --password-stdin
-unset ACR_PULL_PASSWORD
+(
+  set -Eeuo pipefail
+
+  ACR_REGISTRY="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com"
+  ACR_IMAGE="$ACR_REGISTRY/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4"
+  APPROVED_ID="sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4"
+
+  sudo -v
+  ACR_DOCKER_CONFIG="$(sudo mktemp -d /run/gameexchange-acr-pull.XXXXXX)"
+  sudo chmod 700 "$ACR_DOCKER_CONFIG"
+  ACR_CONFIG_CLEANED=0
+
+  cleanup_acr_config() {
+    if [ "$ACR_CONFIG_CLEANED" -eq 1 ]; then
+      return 0
+    fi
+    ACR_CONFIG_CLEANED=1
+    unset ACR_PULL_PASSWORD 2>/dev/null || true
+
+    case "$ACR_DOCKER_CONFIG" in
+      /run/gameexchange-acr-pull.*)
+        sudo docker --config "$ACR_DOCKER_CONFIG" \
+          logout "$ACR_REGISTRY" >/dev/null 2>&1 || true
+        sudo rm -rf -- "$ACR_DOCKER_CONFIG"
+        ;;
+      *)
+        echo "Refusing unexpected cleanup path" >&2
+        return 1
+        ;;
+    esac
+  }
+
+  trap cleanup_acr_config EXIT
+  read -r -p "ACR pull username: " ACR_PULL_USERNAME
+  read -r -s -p "ACR pull password or temporary token: " ACR_PULL_PASSWORD
+  printf '\n'
+
+  printf '%s' "$ACR_PULL_PASSWORD" \
+    | sudo docker --config "$ACR_DOCKER_CONFIG" \
+        login "$ACR_REGISTRY" \
+        --username "$ACR_PULL_USERNAME" \
+        --password-stdin
+  unset ACR_PULL_PASSWORD
+
+  sudo docker --config "$ACR_DOCKER_CONFIG" pull "$ACR_IMAGE"
+  ACTUAL_ID="$(sudo docker image inspect "$ACR_IMAGE" --format '{{.Id}}')"
+  test "$ACTUAL_ID" = "$APPROVED_ID"
+
+  cleanup_acr_config
+  trap - EXIT
+  sudo test ! -e "$ACR_DOCKER_CONFIG"
+)
 ```
 
-因为生产 Compose 由 root 执行，ECS 的登录信息必须对 root Docker Context 生效。不要把 ACR 密码写入 `prod.env`、Compose 或 Shell History。
-
-登录后按不可变 Digest 拉取并核对镜像 ID：
-
-```bash
-ACR_IMAGE="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4"
-sudo docker pull "$ACR_IMAGE"
-sudo docker image inspect \
-  "$ACR_IMAGE" \
-  --format '{{.Id}}'
-```
-
-镜像 ID 必须等于 `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4`。
+镜像 ID 必须等于 `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4`。镜像层进入 Docker daemon 的全局存储，但登录凭据只存在于临时配置目录；不要把 ACR 密码写入 `prod.env`、Compose 或 Shell History。需要无人值守的持久拉取身份时，必须在后续自动化 Milestone 中单独设计和审批。
 
 ### 6.2 ACR 凭据轮换
 
 1. 在旧凭据失效前创建或获取新的最小权限 Pull 凭据。
-2. 使用新凭据执行 `sudo docker login`。
+2. 使用新凭据和 root-only 临时 `--config` 执行 `sudo docker login`。
 3. 重新拉取当前 Digest，并再次验证镜像 ID。
-4. 执行一次只读 `sudo docker compose ... config` 和 `pull app` 验证。
+4. 使用同一临时 `--config` 执行一次 `sudo docker compose ... config` 和 `pull app` 验证。
 5. 撤销旧凭据，记录轮换人、时间和验证证据。
 6. 失败时恢复仍有效的旧凭据，不得改用匿名仓库或放宽仓库公开权限。
 
