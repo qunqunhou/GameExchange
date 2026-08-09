@@ -66,6 +66,19 @@ Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置�
 
 `READY_FOR_ACR_PUSH_REVIEW` 只表示 ECS 前置阻断项已经关闭，可以进入 ACR Push 的方案设计和审批。该状态不授权登录 ACR、推送镜像、修改生产 Compose 或部署 RC2，也不表示生产就绪。当前仍无正式域名和可信 TLS，仅允许 SSH Tunnel 私有验证；单 ECS 单点、UFW 未启用、外部探测、备份恢复演练和生产容量尚未完成，仍属于后续独立 Milestone 的验收范围。
 
+### 1.3 P3.2-A ACR 发布与身份回验记录
+
+发布日期：`2026-08-09`。Overall Status：`READY_FOR_ECS_PULL_REVIEW`。本次发布使用 Release Gate 已批准的本地镜像，不重新构建，也不覆盖 ACR 中身份未验证的历史 Tag。
+
+| 检查项 | 实际结果 | 状态 |
+| --- | --- | --- |
+| 唯一 Tag | `1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13`；发布前远端返回 `no such manifest` | `PASSED` |
+| Registry Manifest Digest | `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` | `PASSED` |
+| Digest 拉回验证 | 按 Registry Digest 拉取成功，Image ID 与 Release Gate 批准值一致 | `PASSED` |
+| 凭据清理 | ACR 身份验证后已执行 `docker logout`，未归档用户名或密码 | `PASSED` |
+
+完整证据见 [ACR_PUBLICATION.md](../releases/1.0.0-rc2/ACR_PUBLICATION.md)。`READY_FOR_ECS_PULL_REVIEW` 只允许进入 ECS 拉取身份、Digest 拉取和部署配置的方案评审，不授权 ECS 登录 ACR、拉取镜像、修改生产 Compose 或部署 RC2。
+
 ## 2. 已批准的 RC2 制品边界
 
 部署验证必须使用已经通过 Release Gate 的 RC2 制品，不得在 ECS 上执行 Maven 构建或 `docker build`。
@@ -216,7 +229,7 @@ APPROVED_SOURCE_IMAGE="gameexchange-rc:1.0.0-rc2-562b503a911b-20260807-222130-11
 ACR_REGISTRY="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com"
 ACR_REPOSITORY="$ACR_REGISTRY/smzhiman/gameexchange"
 ACR_TAG="$ACR_REPOSITORY:1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13"
-ACR_DIGEST_REF="$ACR_REPOSITORY@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
+ACR_DIGEST_REF="$ACR_REPOSITORY@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4"
 
 read -r -p "ACR username: " ACR_USERNAME
 read -r -s -p "ACR password or temporary token: " ACR_PASSWORD
@@ -232,7 +245,7 @@ docker pull "$ACR_DIGEST_REF"
 docker image inspect "$ACR_DIGEST_REF" --format '{{.Id}}'
 ```
 
-ACR 地址、命名空间和 `gameexchange` 私有仓库已经由资源清单确认；仓库列表截图只能证明仓库存在，不能证明其中镜像属于 RC2。`REPLACE_WITH_REGISTRY_MANIFEST_DIGEST` 必须替换为本次 ACR Push 结果或 ACR 控制台记录的完整 64 位十六进制 Digest。
+ACR 地址、命名空间和 `gameexchange` 私有仓库已经由资源清单确认；仓库列表截图只能证明仓库存在，不能证明其中镜像属于 RC2。本次 Push、按 Digest 拉回和 Image ID 复核结果已归档在 [ACR_PUBLICATION.md](../releases/1.0.0-rc2/ACR_PUBLICATION.md)，后续步骤必须使用上述完整不可变引用。
 
 发布前后的 `docker image inspect` 都必须返回：
 
@@ -261,7 +274,7 @@ unset ACR_PULL_PASSWORD
 登录后按不可变 Digest 拉取并核对镜像 ID：
 
 ```bash
-ACR_IMAGE="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
+ACR_IMAGE="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4"
 sudo docker pull "$ACR_IMAGE"
 sudo docker image inspect \
   "$ACR_IMAGE" \
@@ -286,13 +299,13 @@ sudo docker image inspect \
 `/opt/gameexchange/config/prod.env` 只保存非敏感变量：
 
 ```dotenv
-APP_IMAGE=crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST
+APP_IMAGE=crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4
 MYSQL_USER=gameexchange_app
 MYSQL_DATA_DIR=/data/gameexchange/mysql
 SECRETS_DIR=/opt/gameexchange/secrets
 ```
 
-示例地址和 Digest 必须替换为 ACR 的真实不可变引用。`APP_IMAGE` 缺失时 Compose 会直接报错，防止误用开发镜像。密码不得写入该文件。
+`APP_IMAGE` 使用 P3.2-A 已发布并完成拉回验证的真实不可变引用。该变量缺失时 Compose 会直接报错，防止误用开发镜像；密码不得写入该文件。
 
 仅替换 Secret 文件不会修改 MySQL 中已经保存的账号密码。密码轮换必须在维护窗口内协调完成数据库账号修改、Secret 文件原子替换和 App 重建，并验证旧密码失效；不得只改文件后直接重启服务。
 
