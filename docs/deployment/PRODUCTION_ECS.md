@@ -94,9 +94,9 @@ Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置�
 
 完整证据见 [ECS_PULL_VERIFICATION.md](../releases/1.0.0-rc2/ECS_PULL_VERIFICATION.md)。`READY_FOR_DEPLOY_CONFIG_REVIEW` 只允许进入生产配置准备、Compose 渲染和回滚方案评审；镜像已存在于 ECS 不代表已经授权修改配置、重建容器或部署 RC2。
 
-### 1.5 P3.2-C/D ECS 部署与私有验收记录
+### 1.5 P3.2-C/D/E ECS 部署、私有验收与配置收敛记录
 
-验证日期：`2026-08-09`。Overall Status：`PRIVATE_VALIDATION_PASSED`。本次在部署前完成在线配置、挂载、Secret、回滚镜像和数据库备份审计，随后只替换 App 容器，并通过 SSH Tunnel 完成无域名私有验收。
+验证日期：`2026-08-09`。Overall Status：`PRIVATE_VALIDATION_PASSED`。本次在部署前完成在线配置、挂载、Secret、回滚镜像和数据库备份审计，随后只替换 App 容器，通过 SSH Tunnel 完成无域名私有验收，并在不重建容器的前提下收敛基础 `APP_IMAGE`。
 
 | 步骤 | 实际结果 | 状态 |
 | --- | --- | --- |
@@ -105,8 +105,9 @@ Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置�
 | P3.2-D1 发布前保护 | 6 张业务表全部为 InnoDB；生成 `root:root 0600` 的压缩逻辑备份并校验 SHA-256；旧 App Smoke 与 RC2 Secret 探针通过 | `PASSED` |
 | P3.2-D2 App-only 部署 | App 切换到批准镜像 `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` 并达到 `healthy`；静态资源和 `/stats` 通过；MySQL 容器、镜像与启动时间不变 | `PASSED` |
 | P3.2-D3 私有验收 | SSH Tunnel 下登录页、静态配置和 `/stats` 通过；ECS 公网 `8080/3306` 不可连接；浏览器页面正常，验收后隧道已关闭 | `PASSED` |
+| P3.2-E1 配置收敛 | 备份 `prod.env` 后只更新 `APP_IMAGE`；基础 Compose 可直接渲染批准的 RC2 Digest；App 与 MySQL 指纹、健康状态和启动时间完全不变 | `PASSED` |
 
-完整证据见 [ECS_DEPLOYMENT_VERIFICATION.md](../releases/1.0.0-rc2/ECS_DEPLOYMENT_VERIFICATION.md)。当前 RC2 依赖 `/opt/gameexchange/docker-compose.rc2-app-override.yaml` 运行，后续 Compose 操作必须携带该 Override。`PRIVATE_VALIDATION_PASSED` 不代表生产就绪：当前仍无域名和可信 TLS，数据库备份尚未离机或完成恢复演练，单 ECS 单点、外部探测、完整 UI E2E、生产容量和高可用限制继续存在。
+完整证据见 [ECS_DEPLOYMENT_VERIFICATION.md](../releases/1.0.0-rc2/ECS_DEPLOYMENT_VERIFICATION.md)。基础 `/opt/gameexchange/prod.env` 现已直接引用批准的 RC2 Digest；App Override 继续保留为部署历史与回退材料，但不再是基础配置的必要条件。`PRIVATE_VALIDATION_PASSED` 不代表生产就绪：当前仍无域名和可信 TLS，数据库备份尚未离机或完成恢复演练，单 ECS 单点、外部探测、完整 UI E2E、生产容量和高可用限制继续存在。
 
 ## 2. 已批准的 RC2 制品边界
 

@@ -90,9 +90,26 @@ P3.2-D3 从部署工作站建立本机 `127.0.0.1:18080` 到 ECS `127.0.0.1:8080
 
 本次按 Owner 要求不采集截图。文本化 HTTP、业务码和端口结果作为本步骤证据；该范围不包含完整浏览器 UI E2E。
 
-## 6. 当前运行边界
+## 6. 基础 Compose 配置收敛
 
-- RC2 当前依赖 `/opt/gameexchange/docker-compose.rc2-app-override.yaml` 覆盖 App 镜像。后续执行 Compose 更新时必须携带该 Override；只使用 Base Compose 可能把 App 恢复为旧镜像。
+P3.2-E1 在私有验收通过后，将基础 `/opt/gameexchange/prod.env` 的 `APP_IMAGE` 从旧镜像更新为批准的 RC2 Digest。该步骤只收敛期望配置，不执行 `docker compose up`，也不重建任何容器。
+
+| 检查项 | 实际结果 | 状态 |
+| --- | --- | --- |
+| 配置快照 | `/var/backups/gameexchange/config/p3.2-e1-20260809T104757Z/prod.env` | `CREATED` |
+| 快照权限 | `root:root 0600` | `PASSED` |
+| 基础 `APP_IMAGE` | `crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` | `PASSED` |
+| 环境文件边界 | `APP_IMAGE` 保持唯一；其余内容校验一致；`prod.env` 保持 `root:root 0600` | `PASSED` |
+| App 指纹 | Container ID、Image ID、`running / healthy` 和 Started At 均未变化 | `UNCHANGED` |
+| MySQL 指纹 | Container ID、Image ID、`running / healthy` 和 Started At 均未变化 | `UNCHANGED` |
+| 业务探测 | 静态配置与 `/stats` 的 JSON `code=200` 通过 | `PASSED` |
+| 运行时操作 | 未执行 Compose Up，未重建 App 或 MySQL，无中断或 Session 失效 | `UNCHANGED` |
+
+App Override 继续作为 D2 部署历史与回退材料保留，但基础 Compose 现已能单独渲染批准的 RC2 镜像，不再依赖该 Override 才能表达当前期望状态。
+
+## 7. 当前运行边界
+
+- 基础 `/opt/gameexchange/prod.env` 已直接引用批准的 RC2 Digest；`docker-compose.rc2-app-override.yaml` 继续保留，但不再是基础配置正确渲染 RC2 的必要条件。
 - App、Grafana 和 Prometheus 继续只绑定 ECS 回环地址；MySQL 未发布宿主机端口。
 - SSH Tunnel 只证明受控私有访问，不代表 DNS、可信 TLS、Nginx 公网入口或外部探测已经通过。
 - 当前仍是单 ECS、单 App 实例和本机 MySQL，存在节点级单点，不具备高可用能力。
@@ -100,8 +117,8 @@ P3.2-D3 从部署工作站建立本机 `127.0.0.1:18080` 到 ECS `127.0.0.1:8080
 - 本次没有执行完整浏览器业务 E2E、生产流量测试或容量测试。
 - [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 中原始 `KL-01` 至 `KL-09` 的签署记录保持不变；后续 ACR 与 ECS 证据只补充新的时间点，不覆盖历史决策。
 
-## 7. 结论
+## 8. 结论
 
-`GameExchange 1.0.0-rc2` 已按批准的不可变 ACR Digest 部署到目标 ECS，App 健康、数据库业务探测通过、MySQL 运行身份保持不变，并完成无域名 SSH Tunnel 私有验收。最终状态为 `PRIVATE_VALIDATION_PASSED`。
+`GameExchange 1.0.0-rc2` 已按批准的不可变 ACR Digest 部署到目标 ECS，App 健康、数据库业务探测通过、MySQL 运行身份保持不变，并完成无域名 SSH Tunnel 私有验收和基础 Compose 配置收敛。最终状态为 `PRIVATE_VALIDATION_PASSED`。
 
 该结论仅适用于作品集技术预发布。正式公网运行前仍需完成域名与可信 TLS、入口代理、外部监控、离机备份与恢复演练、容量验证以及与目标 SLA 相匹配的高可用设计。详细运行边界见 [PRODUCTION_ECS.md](../../deployment/PRODUCTION_ECS.md)。

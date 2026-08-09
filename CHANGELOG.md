@@ -16,6 +16,7 @@
 - 将 Release Gate 批准的 RC2 镜像发布到杭州 ACR，并在 ECS 上按不可变 Registry Digest 拉取和回验镜像身份。
 - 保存在线 Compose 与环境文件快照，使用 App-only Override 将单 ECS App 切换到批准镜像；部署过程未重建 MySQL。
 - 在切换前生成数据库压缩逻辑备份并校验 SHA-256，保留旧镜像和基础 Compose 作为回滚材料。
+- 将基础 `prod.env` 的 `APP_IMAGE` 收敛到批准的 RC2 Digest；配置变更未触发容器重建，App 与 MySQL 运行指纹保持不变。
 
 ### 验证
 
@@ -26,7 +27,7 @@
 ### 部署边界
 
 - 当前状态仅为作品集技术预发布的私有部署验证通过，不代表域名、可信 TLS、公网可用性、高可用、生产容量或恢复能力已经完成。
-- 数据库备份仍位于同一 ECS，尚未完成离机复制和隔离恢复演练；当前 RC2 Compose 操作仍需显式携带 App Override。
+- 数据库备份仍位于同一 ECS，尚未完成离机复制和隔离恢复演练；App Override 继续保留为历史与回退材料，但基础 Compose 已不再依赖它渲染 RC2。
 - 完整证据见 [RC2 ECS Deployment Verification](docs/releases/1.0.0-rc2/ECS_DEPLOYMENT_VERIFICATION.md)。
 
 ## [1.0.0-rc2] - 2026-08-08
