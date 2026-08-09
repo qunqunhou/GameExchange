@@ -207,11 +207,15 @@ sudo stat -c '%u:%g %a %n' \
 
 本步骤在仍保存已验证 RC2 镜像的发布工作站执行。不要重新构建镜像。
 
+`2026-08-09` 发布前复核发现，ACR 已存在历史 Tag `1.0.0-rc2`，其最近推送时间为 `2026-08-06 13:49:01`，Registry Manifest Digest 为 `sha256:fba59bd644daab0be7bd68980977bc3d38c36ab78ab1859370a957feeb7c000c`。该 Tag 早于当前批准镜像生成，且尚未完成当前 RC2 的身份验证，因此不得删除、覆盖或作为本次部署依据。
+
+本次发布使用与 Release Gate 镜像名对应的唯一 Tag `1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13`。登录和推送前必须在 ACR 控制台确认该完整 Tag 不存在；如果已经存在，立即停止，不得覆盖，必须先按其 Registry Digest 拉取并复核 Image ID，再单独评审后续处理。
+
 ```bash
 APPROVED_SOURCE_IMAGE="gameexchange-rc:1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13"
 ACR_REGISTRY="crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com"
 ACR_REPOSITORY="$ACR_REGISTRY/smzhiman/gameexchange"
-ACR_TAG="$ACR_REPOSITORY:1.0.0-rc2"
+ACR_TAG="$ACR_REPOSITORY:1.0.0-rc2-562b503a911b-20260807-222130-114-a5ccab13"
 ACR_DIGEST_REF="$ACR_REPOSITORY@sha256:REPLACE_WITH_REGISTRY_MANIFEST_DIGEST"
 
 read -r -p "ACR username: " ACR_USERNAME
