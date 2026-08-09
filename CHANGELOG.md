@@ -9,6 +9,26 @@
 - 不在变更记录中保存凭据、服务器地址或其他敏感信息。
 - 形成发布候选或正式版本后，在带日期的版本章节中记录对应内容。
 
+## RC2 私有部署验证 - 2026-08-09
+
+### 部署
+
+- 将 Release Gate 批准的 RC2 镜像发布到杭州 ACR，并在 ECS 上按不可变 Registry Digest 拉取和回验镜像身份。
+- 保存在线 Compose 与环境文件快照，使用 App-only Override 将单 ECS App 切换到批准镜像；部署过程未重建 MySQL。
+- 在切换前生成数据库压缩逻辑备份并校验 SHA-256，保留旧镜像和基础 Compose 作为回滚材料。
+
+### 验证
+
+- 新 App 容器使用批准的 `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` 镜像并达到 `healthy`，静态资源和 `/stats` 业务探测通过。
+- MySQL 容器 ID、镜像 ID 和启动时间在 App-only 部署前后保持不变。
+- 通过 SSH Tunnel 完成无域名私有验收；登录页、静态配置和 `/stats` 通过，ECS 公网 `8080/3306` 保持不可连接。
+
+### 部署边界
+
+- 当前状态仅为作品集技术预发布的私有部署验证通过，不代表域名、可信 TLS、公网可用性、高可用、生产容量或恢复能力已经完成。
+- 数据库备份仍位于同一 ECS，尚未完成离机复制和隔离恢复演练；当前 RC2 Compose 操作仍需显式携带 App Override。
+- 完整证据见 [RC2 ECS Deployment Verification](docs/releases/1.0.0-rc2/ECS_DEPLOYMENT_VERIFICATION.md)。
+
 ## [1.0.0-rc2] - 2026-08-08
 
 ### 新增
