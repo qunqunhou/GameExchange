@@ -9,11 +9,13 @@
 | 文档目标 | 建立可部署、可验证、可回滚的低流量生产基线 |
 | 非目标 | 高可用、自动扩缩容、Redis、Kubernetes、CI/CD、生产压测 |
 | 已确认资源 | Ubuntu 22.04、`x86_64` ECS、独立数据盘、杭州个人版 ACR |
-| 当前入口条件 | 尚无正式域名；P3.1 仅允许 SSH Tunnel 私有验证，不启用公网 HTTP/HTTPS |
+| 当前入口条件 | 尚无正式域名；P3.5 允许受限公网 HTTP 演示入口，不启用 HTTPS |
 
 本文档只定义 Phase 6.1-A 的生产部署基线。单 ECS 仍然存在节点级单点故障，不能据此宣称系统已经具备高可用能力。有明确 SLA、不可接受停机或不可接受本地数据库丢失风险时，应停止使用本方案，并单独设计 ECS + SLB + RDS 或其他高可用架构。
 
 P3.1-A 同时记录无域名条件下的私有验证路径。SSH Tunnel 只用于验证 ACR、ECS、App、MySQL 和数据盘链路，不替代正式域名、可信 TLS、外部探测、备份恢复或生产验收。
+
+P3.5 在用户明确接受明文传输风险后增加 `PUBLIC_HTTP_PORTFOLIO_DEMO` 模式。该模式只用于作品集展示，不代表安全或生产就绪：登录密码与 `JSESSIONID` 会通过公网明文传输，链路上的第三方可能窃听或篡改请求；只能使用唯一密码的一次性演示账号和非个人、非生产数据，且无法保证 Cookie 带有 `Secure` 属性。`KL-01` 继续保持 `BLOCKED`。
 
 ### 1.1 P3.1-A ECS 只读审计记录
 
@@ -122,6 +124,19 @@ Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置�
 
 该恢复演练降低了 `KL-04` 的未验证范围，但仍只代表一次手工恢复链路通过。自动化备份、周期性恢复演练、正式 RPO/RTO、容量验证和高可用仍需独立 Milestone 验证。
 
+### 1.7 P3.5 公网 HTTP 演示入口验收记录
+
+验证日期：`2026-08-10`。Overall Status：`PUBLIC_HTTP_PORTFOLIO_DEMO`。本次在无正式域名、无可信 TLS 的前提下，只开放公网 `80/tcp` 作为作品集 HTTP 演示入口；该结果不代表安全或生产就绪，`KL-01` 继续保持 `BLOCKED`。
+
+| 步骤 | 实际结果 | 状态 |
+| --- | --- | --- |
+| P3.5 配置安装 | `gameexchange-http-entrypoint.sh` 完成 `nginx -t`、Nginx 启用、本机登录页 Smoke Test、`/metrics` 返回 `404` 和端口边界检查；配置快照位于 `/var/backups/gameexchange/nginx/p3.5-http-20260810T123731Z` | `PASSED` |
+| 公网 HTTP 验收 | 安全组仅新增 `TCP 80` 后，从 ECS 外部验证登录页、静态资源、`/metrics=404` 均符合预期；浏览器可以访问并使用一次性演示账号登录 | `PASSED` |
+| 暴露边界 | `443/8080/3306/3000/9090` 不作为公网入口；Nginx 是唯一公网业务入口，App 继续经宿主机回环地址访问 | `PASSED` |
+| 风险边界 | 登录密码和 `JSESSIONID` 仍通过公网明文传输，禁止使用真实个人数据、生产数据或复用密码 | `ACCEPTED` |
+
+该验收只证明低流量作品集 HTTP 演示链路可用。正式生产入口仍需域名、可信 TLS、HTTPS Cookie 策略、外部监控、容量验证和高可用设计。
+
 ## 2. 已批准的 RC2 制品边界
 
 部署验证必须使用已经通过 Release Gate 的 RC2 制品，不得在 ECS 上执行 Maven 构建或 `docker build`。
@@ -154,7 +169,7 @@ flowchart LR
     volume -.-> backup["加密离机备份 / OSS"]
 ```
 
-以上是具备正式域名后的生产入口。当前无域名验证使用以下私有路径：
+以上是具备正式域名后的生产入口。无域名私有验证仍可使用以下路径：
 
 ```mermaid
 flowchart LR
@@ -165,12 +180,22 @@ flowchart LR
     mysql --> volume["独立数据盘：/data/gameexchange/mysql"]
 ```
 
+P3.5 公网 HTTP 演示入口使用以下路径：
+
+```mermaid
+flowchart LR
+    user["公网访客：HTTP"] --> sg["ECS 安全组：仅 80"]
+    sg --> nginx["宿主机 Nginx：80"]
+    nginx --> app["RC2 App：127.0.0.1:8080"]
+    app --> mysql["MySQL 8.4：Compose 内部网络"]
+```
+
 ### 3.1 组件职责
 
 | 组件 | 职责 | 边界 |
 | --- | --- | --- |
-| ECS 安全组 | 控制进入主机的网络流量 | 域名模式开放 `80/443`；无域名模式只允许可信管理地址访问 `22` |
-| 宿主机 Nginx | TLS、HTTP 到 HTTPS 跳转、反向代理、基础安全响应头 | 仅域名模式启用；不直接访问 MySQL，不保存应用密码 |
+| ECS 安全组 | 控制进入主机的网络流量 | 域名模式开放 `80/443`；HTTP 演示模式仅开放 `80`；私有模式只允许可信管理地址访问 `22` |
+| 宿主机 Nginx | TLS、HTTP 到 HTTPS 跳转或 HTTP 演示反向代理、基础安全响应头 | 按入口模式选择独立配置；不直接访问 MySQL，不保存应用密码 |
 | App 容器 | 运行已批准 RC2 镜像 | 只发布到宿主机 `127.0.0.1:8080` |
 | MySQL 容器 | 保存业务数据 | 不发布宿主机端口，只允许 Compose 内部网络访问 |
 | ESSD Bind Mount | 保存 MySQL 数据目录 | Compose 强制读取 `MYSQL_DATA_DIR`，并绑定到 `/var/lib/mysql` |
@@ -187,8 +212,8 @@ flowchart LR
 
 - Linux x86_64 ECS，建议从 `2 vCPU / 8 GiB` 内存开始。
 - 使用 ESSD 或等价数据盘，并将其持久挂载到 `/data`；MySQL 固定使用 `/data/gameexchange/mysql`。
-- 正式生产入口需要固定公网地址和正式域名解析；无域名 P3.1 验证不启用公网业务入口。
-- 域名模式的安全组公网入方向只允许 `80/tcp`、`443/tcp`；无域名模式保持这两个端口关闭。
+- 正式生产入口需要固定公网地址、正式域名解析和可信 TLS；P3.5 裸 HTTP 入口不得当作正式生产入口。
+- 域名模式的安全组公网入方向只允许 `80/tcp`、`443/tcp`；HTTP 演示模式只开放 `80/tcp`；私有模式保持这两个端口关闭。
 - `22/tcp` 只允许公司出口 IP、堡垒机或其他受控管理入口。
 - 不开放 `8080/tcp`、`3306/tcp`。
 - Docker Engine、Docker Compose v2 和 `jq` 应按目标 Linux 发行版的官方安装方法安装，并在部署前记录版本。
@@ -487,7 +512,7 @@ Nginx 官方反向代理与 TLS 参考：
 
 ### 7.5 无域名 SSH Tunnel 验证模式
 
-无域名时不使用裸公网 HTTP、自签名证书或临时第三方域名模拟生产 TLS。ECS 安全组只允许可信管理地址访问 `22/tcp`，保持 `80/443/8080/3306` 关闭；App 继续只绑定 `127.0.0.1:8080`。
+选择 SSH Tunnel 私有验证时，不使用裸公网 HTTP、自签名证书或临时第三方域名模拟生产 TLS。ECS 安全组只允许可信管理地址访问 `22/tcp`，保持 `80/443/8080/3306` 关闭；App 继续只绑定 `127.0.0.1:8080`。
 
 App 和 MySQL 健康后，由用户在本机终端建立隧道：
 
@@ -501,6 +526,14 @@ ssh -N \
 该命令不提供远程 Shell，只把本机 `127.0.0.1:18080` 通过 SSH 加密连接到 ECS 回环地址。SSH 私钥、密码和公网 IP 不写入仓库；本机 `18080` 已被占用时应选择另一个未使用端口。
 
 验证完成前不得使用真实生产账号或真实个人数据。SSH Tunnel 证明私有访问链路可用，但不证明公网 DNS、TLS 证书、Nginx、外部监控或生产容量已经通过。
+
+### 7.6 P3.5 公网 HTTP 演示模式
+
+该模式使用 `deploy/nginx/gameexchange-http.conf`，通过 ECS 公网地址提供 `80/tcp`。Nginx 是唯一公网业务入口，App 继续只绑定 `127.0.0.1:8080`，MySQL、Grafana 和 Prometheus 不开放公网端口。配置对 `/metrics` 及其子路径返回 `404`，只允许 `GET`、`HEAD`、`POST`，并设置基础响应头、单 IP 请求速率和并发连接限制。
+
+此模式的运行标签固定为 `PUBLIC_HTTP_PORTFOLIO_DEMO`。它没有 TLS，不能抵御链路窃听或篡改，也不能保证 `JSESSIONID` 使用 `Secure` Cookie；禁止使用复用密码、真实个人信息或生产数据。`KL-01` 必须继续标记为 `BLOCKED`，不得用“已加固”“安全公网入口”或“生产就绪”描述该结果。
+
+启用顺序必须是：审计现有 Nginx 和端口 → 备份配置 → 停用默认站点 → 安装 HTTP 配置 → `nginx -t` → 启动 Nginx → ECS 本机 Smoke Test → 开放安全组 `80/tcp` → 外网验证。安全组不得提前开放。
 
 ## 8. 首次部署步骤
 
@@ -516,7 +549,7 @@ sudo systemctl is-active docker
 sudo ss -lntp
 ```
 
-域名模式还需执行 `nginx -v`。确认 `8080` 没有被未知进程占用、`3306` 没有公网监听；无域名模式不要求安装或启动 Nginx，并保持 `80/443` 关闭。
+域名模式和 HTTP 演示模式还需执行 `nginx -v`。确认 `80` 未被未知进程占用、`8080` 只监听回环地址、`3306` 没有公网监听；私有模式不要求安装或启动 Nginx，并保持 `80/443` 关闭。
 
 ### 8.2 验证 Secret 和数据盘
 
@@ -598,6 +631,16 @@ sudo systemctl status nginx --no-pager
 
 `nginx -t` 必须成功后才能 reload。证书路径、域名或上游端口错误时不得绕过检查。
 
+### 8.6 启用 Nginx（P3.5 HTTP 演示模式）
+
+先把仓库中的 `deploy/nginx/gameexchange-http.conf` 上传到 ECS 的 `/tmp/gameexchange-http.conf`，并把 `deploy/scripts/gameexchange-http-entrypoint.sh` 上传到 `/tmp/gameexchange-http-entrypoint.sh`。然后在 ECS 执行一条安装命令：
+
+```bash
+sudo bash /tmp/gameexchange-http-entrypoint.sh
+```
+
+脚本会先验证 App 的回环地址 `http://127.0.0.1:8080/vue/login.html`，再备份 `/etc/nginx`、停用默认站点、安装 HTTP 配置、执行 `nginx -t`、启动或重载 Nginx，并验证 Nginx 入口登录页可访问、`/metrics` 返回 `404`、`443/8080/3306/3000/9090` 未被公网监听。只有脚本返回 Exit Code `0` 后，才在阿里云安全组新增公网入方向 `TCP 80`。不要新增 `443/8080/3306/3000/9090` 规则。若脚本失败，不得开放安全组，应先查看输出中的 `ERROR` 行和 `/var/backups/gameexchange/nginx/` 下的快照。
+
 ## 9. 上线验证
 
 ### 9.1 容器与镜像身份
@@ -648,17 +691,29 @@ curl --fail --show-error --silent \
 
 三个命令必须全部返回 Exit Code `0`。浏览器只访问 `http://127.0.0.1:18080/`；HTTP 明文只存在于本机和 ECS 回环接口，跨公网的数据由 SSH 加密。该结果不得记录为 HTTPS、证书链或公网可用性验证通过。
 
+#### 9.2.2 P3.5 公网 HTTP 演示验证
+
+从 ECS 外部使用公网地址验证，不把真实地址写入仓库或证据文档：
+
+```bash
+curl -fsS "http://<ecs-public-ip>/vue/login.html" >/dev/null
+curl -fsS "http://<ecs-public-ip>/vue/assets/js/app-config.js" >/dev/null
+test "$(curl -sS -o /dev/null -w '%{http_code}' "http://<ecs-public-ip>/metrics")" = 404
+```
+
+浏览器再完成人工登录和只读业务 Smoke Test。随后从 ECS 外部确认 `443/8080/3306/3000/9090` 均不可连接。最终状态只能记录为 `PUBLIC_HTTP_PORTFOLIO_DEMO`，不能记录为 HTTPS、安全入口或生产就绪。
+
 ### 9.3 网络暴露
 
 ```bash
 sudo ss -lntp
 ```
 
-域名模式下，宿主机应看到 Nginx 监听 `80/443`，应用只监听 `127.0.0.1:8080`。无域名模式下不应存在业务公网监听，安全组只向可信管理地址开放 `22`。两种模式都必须从 ECS 外部确认 `8080`、`3306` 无法连接，不能只依赖主机本地结果。
+域名模式下，宿主机应看到 Nginx 监听 `80/443`；HTTP 演示模式只监听 `80`；私有模式不应存在业务公网监听。所有模式下应用只监听 `127.0.0.1:8080`，并必须从 ECS 外部确认 `8080/3306/3000/9090` 无法连接；HTTP 演示模式还必须确认 `443` 不可连接。
 
 ### 9.4 重启恢复
 
-在维护窗口内分别验证 Docker daemon 重启和 ECS 重启。每次重启后检查容器健康、数据库数据以及当前入口模式的 Smoke Test；域名模式还要检查 HTTPS 和 Nginx。`restart: unless-stopped` 不会自动恢复被管理员手动停止的容器，这是预期行为。
+在维护窗口内分别验证 Docker daemon 重启和 ECS 重启。每次重启后检查容器健康、数据库数据以及当前入口模式的 Smoke Test；域名模式还要检查 HTTPS 和 Nginx，HTTP 演示模式检查 Nginx 和本机 HTTP。`restart: unless-stopped` 不会自动恢复被管理员手动停止的容器，这是预期行为。
 
 ### 9.5 独立业务探测
 
@@ -676,7 +731,7 @@ curl --fail --show-error --silent --max-time 10 \
 
 探测至少每分钟执行一次，连续 3 次失败后告警。告警必须包含 HTTP 结果、JSON 解析结果、Nginx 状态、App 状态和 MySQL 状态。业务探测失败只触发告警与排查，不直接执行无限重启，避免数据库故障引发重启循环。
 
-无域名验证只能通过 SSH Tunnel 执行人工或受控本机探测，不能据此宣称已经建立公网外部监控。
+SSH Tunnel 私有验证只能执行人工或受控本机探测；P3.5 HTTP 演示模式也只执行人工外网验证。两者都不能据此宣称已经建立公网外部监控。
 
 ## 10. 备份与恢复
 
@@ -898,9 +953,9 @@ esac
 ## 12. 日志与基础观测
 
 - Compose 使用 `json-file` 日志轮转，避免单个容器日志无限增长。
-- 域名模式的 Nginx Access/Error Log 位于 `/var/log/nginx/`；无域名模式不启用 Nginx。
+- 域名模式和 HTTP 演示模式的 Nginx Access/Error Log 位于 `/var/log/nginx/`；私有模式不启用 Nginx。
 - 应配置 ECS CPU、内存、磁盘使用率、磁盘 inode 和主机可用性告警。
-- 域名模式应配置 HTTPS 外部探测，探测登录页和静态资源；无域名验证不宣称具备公网探测。
+- 域名模式应配置 HTTPS 外部探测，探测登录页和静态资源；SSH Tunnel 私有验证及 P3.5 HTTP 演示模式都不宣称具备公网外部监控。
 - 容器 `unhealthy` 不会触发 Docker 自动重启；健康检查与重启策略是两个独立机制。发现 `unhealthy` 时应告警并分析日志。
 
 Prometheus、Grafana 和集中日志不在 Phase 6.1-A 范围内，应在后续可观测性 Milestone 中设计。
@@ -914,9 +969,9 @@ Prometheus、Grafana 和集中日志不在 Phase 6.1-A 范围内，应在后续�
 | ACR | 使用已确认的杭州私有仓库；生产引用本次 Push 返回的不可变 Registry Digest |
 | 开发环境 | `compose.yaml` 保持不变 |
 | Compose | `docker compose config` 成功；不存在 `build` 和 Seed 挂载 |
-| Nginx | 仅域名模式启用；`nginx -t` 成功、HTTP 跳转 HTTPS、证书链有效 |
-| 无域名验证 | 通过 SSH Tunnel 访问本机 `127.0.0.1:18080`；不得声明 TLS 或公网可用性通过 |
-| 网络 | 域名模式公网只开放 `80/443`；无域名模式只向可信地址开放 `22`；`8080/3306` 始终不可公网访问 |
+| Nginx | 所选入口配置通过 `nginx -t`；域名模式验证 HTTPS，HTTP 演示模式验证登录页和 `/metrics` 404 |
+| 无域名验证 | 私有模式可通过 SSH Tunnel；HTTP 演示模式只能标记为 `PUBLIC_HTTP_PORTFOLIO_DEMO`，`KL-01` 保持 `BLOCKED` |
+| 网络 | 域名模式公网开放 `80/443`；HTTP 演示模式只开放 `80`；`8080/3306/3000/9090` 始终不可公网访问 |
 | Secret | 密码不在 Git、普通环境文件、Compose 渲染输出或命令行参数中 |
 | 数据持久化 | MySQL Bind Mount 来源为 `/data/gameexchange/mysql`，且 `findmnt` 证明它位于 ESSD；重启后数据保持 |
 | 备份恢复 | 备份上传离机存储，并完成一次隔离恢复演练 |
@@ -929,4 +984,7 @@ Prometheus、Grafana 和集中日志不在 Phase 6.1-A 范围内，应在后续�
 - Docker Engine 安装：<https://docs.docker.com/engine/install/>
 - Nginx Reverse Proxy：<https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/>
 - Nginx SSL Termination：<https://docs.nginx.com/nginx/admin-guide/security-controls/terminating-ssl-http/>
+- Nginx Request Rate Limiting：<https://nginx.org/en/docs/http/ngx_http_limit_req_module.html>
+- Nginx Connection Limiting：<https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html>
+- Nginx HTTP Method Limiting：<https://nginx.org/en/docs/http/ngx_http_core_module.html#limit_except>
 - Docker Awesome Compose Nginx/App/MySQL 示例：<https://github.com/docker/awesome-compose/tree/master/nginx-flask-mysql>
