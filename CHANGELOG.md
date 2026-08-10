@@ -9,6 +9,24 @@
 - 不在变更记录中保存凭据、服务器地址或其他敏感信息。
 - 形成发布候选或正式版本后，在带日期的版本章节中记录对应内容。
 
+## P3.4 受控部署流程 - 2026-08-10
+
+### 新增
+
+- 新增操作者触发的 App-only 受控部署脚本，要求使用完整 ACR `@sha256:` 引用，并在部署前校验 App/MySQL 运行基线。
+- 新增受控部署手册，记录安装、Dry Run、正式部署、故障处理和验证边界。
+
+### 验证
+
+- 仓库侧 `bash -n`、帮助入口和隔离 Dry Run 测试通过；Dry Run 不拉取镜像、不修改配置、不创建快照，也不重建容器。
+- ECS 侧完成脚本安装、真实 Dry Run 和同 Digest 幂等部署验证；证据目录为 `/var/backups/gameexchange/deployments/20260810T100345Z`。
+- 本次幂等部署中 App/MySQL 容器 ID、Image ID、Started At 和 `RestartCount=0` 前后一致，`/run/gameexchange-docker-config.*` 无残留。
+
+### 边界
+
+- 本次未替换到新的 App Digest，也未故意触发失败回滚；真实新版本替换和失败回滚仍记录为 `READY`，不能记录为 `PASSED`。
+- 该流程不是 GitHub Actions 远程 CD，不保存 ECS SSH 私钥或 ACR 固定密码。
+
 ## RC2 私有部署验证 - 2026-08-09
 
 ### 部署
