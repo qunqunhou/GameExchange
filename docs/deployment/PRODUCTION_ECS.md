@@ -107,7 +107,20 @@ Grafana 的全接口监听由 Docker 已发布端口产生。当前仓库配置�
 | P3.2-D3 私有验收 | SSH Tunnel 下登录页、静态配置和 `/stats` 通过；ECS 公网 `8080/3306` 不可连接；浏览器页面正常，验收后隧道已关闭 | `PASSED` |
 | P3.2-E1 配置收敛 | 备份 `prod.env` 后只更新 `APP_IMAGE`；基础 Compose 可直接渲染批准的 RC2 Digest；App 与 MySQL 指纹、健康状态和启动时间完全不变 | `PASSED` |
 
-完整证据见 [ECS_DEPLOYMENT_VERIFICATION.md](../releases/1.0.0-rc2/ECS_DEPLOYMENT_VERIFICATION.md)。基础 `/opt/gameexchange/prod.env` 现已直接引用批准的 RC2 Digest；App Override 继续保留为部署历史与回退材料，但不再是基础配置的必要条件。`PRIVATE_VALIDATION_PASSED` 不代表生产就绪：当前仍无域名和可信 TLS，数据库备份尚未离机或完成恢复演练，单 ECS 单点、外部探测、完整 UI E2E、生产容量和高可用限制继续存在。
+完整证据见 [ECS_DEPLOYMENT_VERIFICATION.md](../releases/1.0.0-rc2/ECS_DEPLOYMENT_VERIFICATION.md)。基础 `/opt/gameexchange/prod.env` 现已直接引用批准的 RC2 Digest；App Override 继续保留为部署历史与回退材料，但不再是基础配置的必要条件。`PRIVATE_VALIDATION_PASSED` 不代表生产就绪：当前仍无域名和可信 TLS，单 ECS 单点、外部探测、完整 UI E2E、生产容量和高可用限制继续存在。
+
+### 1.6 P3.3-B/C OSS 离机备份与隔离恢复演练记录
+
+验证日期：`2026-08-10`。Overall Status：`PRIVATE_VALIDATION_AND_RESTORE_PASSED`。本次将 P3.2-D1 生成的数据库逻辑备份上传到启用私有访问、版本控制、AES256 服务端加密和生命周期规则的 OSS Bucket，并使用 OSS 回读副本完成一次隔离 MySQL 与 RC2 App 恢复演练。
+
+| 步骤 | 实际结果 | 状态 |
+| --- | --- | --- |
+| P3.3-B1 OSS 安全基线 | Bucket `gameexchange-rc2-backup-3ee98609` 位于华东 1（杭州）；私有读写、阻止公共访问、版本控制、AES256 和 `backup-history-retention-30d` 生命周期规则通过复核 | `PASSED` |
+| P3.3-B2 离机上传与回读 | ECS 临时绑定最小权限 RAM Role，仅允许 `database/rc2/*` 的 `PutObject` / `GetObject`；主备份与 `.sha256` 上传到 OSS 后完成 SHA-256、`gzip -t` 和字节级下载回验；完成后解绑角色 | `PASSED` |
+| P3.3-C1 隔离恢复 | 使用 OSS 回读副本导入 internal 网络内的临时 MySQL 8.4；6 张表全部为 InnoDB，`battle_record` 关键约束恢复；RC2 App 登录、玩家信息和市场只读 Smoke Test 通过 | `PASSED` |
+| 清理与生产影响 | 恢复 App、恢复 MySQL、internal 网络和 `/data/gameexchange-restore/p3.3-c1` 已清理；生产 App/MySQL 容器 ID、Image ID、Started At、`RestartCount=0` 和 `running/healthy` 前后一致 | `UNCHANGED` |
+
+该恢复演练降低了 `KL-04` 的未验证范围，但仍只代表一次手工恢复链路通过。自动化备份、周期性恢复演练、正式 RPO/RTO、容量验证和高可用仍需独立 Milestone 验证。
 
 ## 2. 已批准的 RC2 制品边界
 

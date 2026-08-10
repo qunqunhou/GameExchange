@@ -2,13 +2,13 @@
 
 ## 1. 验证范围
 
-本文档记录 P3.2-C/D 在阿里云 ECS 上完成的部署准备、App-only 镜像切换和无域名私有验收证据。该结论仅表示 `GameExchange 1.0.0-rc2` 已通过作品集私有部署验证，不代表生产就绪、高可用、可信 TLS 或公网服务能力已经完成。
+本文档记录 P3.2-C/D 在阿里云 ECS 上完成的部署准备、App-only 镜像切换、无域名私有验收，以及 P3.3-B/C 完成的 OSS 离机备份和隔离恢复演练证据。该结论仅表示 `GameExchange 1.0.0-rc2` 已通过作品集私有部署和一次恢复演练验证，不代表生产就绪、高可用、可信 TLS、公网服务能力或正式 RPO/RTO 已经完成。
 
 | 字段 | 值 |
 | --- | --- |
-| Verification Date | `2026-08-09` |
+| Verification Date | `2026-08-10` |
 | Operator / Reviewer | `SMzhiman` |
-| Status | `PRIVATE_VALIDATION_PASSED` |
+| Status | `PRIVATE_VALIDATION_AND_RESTORE_PASSED` |
 | ECS Platform | Ubuntu 22.04，`x86_64` |
 | Deployment Mode | 单 ECS、Docker Compose、无域名 SSH Tunnel 私有验收 |
 | Approved App Image | `crpi-npa4w6l8amsghlzs.cn-hangzhou.personal.cr.aliyuncs.com/smzhiman/gameexchange@sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` |
@@ -54,7 +54,7 @@ P3.2-D1 在部署前生成一致性逻辑备份，并验证当前业务基线和
 | 旧 App Smoke | 当前业务基线通过 | `PASSED` |
 | RC2 临时探针 | 固定用户与文件型 Secret 边界通过，临时容器完成清理 | `PASSED` |
 
-该备份仍与生产数据位于同一台 ECS，且尚未完成离机复制和隔离恢复演练。因此它只提供本次发布前的本机回退材料，不能消除 `KL-04` 对备份恢复能力的限制。
+该备份在 P3.2-D1 时仍与生产数据位于同一台 ECS，只能提供本次发布前的本机回退材料。P3.3-B/C 已在后续步骤完成 OSS 离机复制和一次隔离恢复演练，详见第 7 节；该后续证据降低了 `KL-04` 的未验证范围，但不等同于已经建立生产级 RPO/RTO。
 
 ## 4. App-only 部署结果
 
@@ -107,18 +107,43 @@ P3.2-E1 在私有验收通过后，将基础 `/opt/gameexchange/prod.env` 的 `A
 
 App Override 继续作为 D2 部署历史与回退材料保留，但基础 Compose 现已能单独渲染批准的 RC2 镜像，不再依赖该 Override 才能表达当前期望状态。
 
-## 7. 当前运行边界
+## 7. OSS 离机备份与隔离恢复演练
+
+P3.3-B1/B2 使用阿里云 OSS 私有 Bucket 归档 P3.2-D1 备份，并完成下载回验。P3.3-C1 使用 OSS 回读副本执行隔离 MySQL 与 RC2 App 恢复演练。该演练只验证单次手工恢复链路，不代表自动化备份、定期演练、正式 RPO/RTO 或高可用已经完成。
+
+| 检查项 | 实际结果 | 状态 |
+| --- | --- | --- |
+| OSS Bucket | `gameexchange-rc2-backup-3ee98609`，华东 1（杭州），私有读写，阻止公共访问，版本控制开启 | `PASSED` |
+| 加密与保留 | OSS 完全托管 AES256；生命周期规则 `backup-history-retention-30d` 清理历史版本和删除标记 | `PASSED` |
+| 访问方式 | ECS 临时绑定 `GameExchangeEcsOssBackupRole`，策略仅允许 `database/rc2/*` 的 `PutObject` / `GetObject`；完成后解绑 | `PASSED` |
+| ossutil | 官方 `v1.7.19` Linux x86_64，SHA-256 `0970061c150262d67e2ff46045ce1237f1cbf0df4fcd9f126802a1dc7e0036bf`；使用杭州内网 HTTPS Endpoint | `PASSED` |
+| OSS 主备份 | `database/rc2/game_exchange-20260809T091913Z.sql.gz`，`1758` bytes，SHA-256 `2ce399ab8368f8b721aa4bba106513f7fe35cddf63f40a2eee3385f2c65d7690` | `PASSED` |
+| OSS 校验文件 | `database/rc2/game_exchange-20260809T091913Z.sql.gz.sha256`，`104` bytes | `PASSED` |
+| 回读验证 | 下载到 `/var/backups/gameexchange/verify/p3.3-b2/` 后通过 SHA-256、`gzip -t` 和字节级比较 | `PASSED` |
+| 恢复 MySQL | 临时容器 `gameexchange-restore-mysql-p3-3-c1`，internal 网络，独立目录 `/data/gameexchange-restore/p3.3-c1/mysql`，未挂载生产数据目录 | `PASSED` |
+| 导入结果 | `ImportSeconds=0`；MySQL `8.4.10`，`utf8mb4` / `utf8mb4_0900_ai_ci`；6 张表全部 `InnoDB` | `PASSED` |
+| 恢复行数 | `player=1`，`item=0`，`market=0`，`trade_record=0`，`battle_record=0`，`game_event=0` | `RECORDED` |
+| 关键约束 | `battle_record` 外键、唯一键和 `chk_battle_record_gold_reward` 均恢复 | `PASSED` |
+| 恢复 App | 使用批准 RC2 App Image ID `sha256:b920c62c349ef0b89591932f7bac0b030b7b134394363b321842ef55b62e6ac4` 连接恢复库 | `PASSED` |
+| App Smoke | 已有非特权玩家账号登录 `LoginCode=200`；玩家信息 `PlayerInfoCode=200`；市场只读 `MarketHTTP=200`，`MarketItems=0` | `PASSED` |
+| 端口异常处理 | 恢复 App 宿主端口发布未实际监听，最终改用恢复网络内部 IP 验证；未暴露公网 | `RECORDED` |
+| 清理 | 恢复 App、恢复 MySQL、internal 网络和 `/data/gameexchange-restore/p3.3-c1` 已删除 | `PASSED` |
+| 生产影响 | App/MySQL 容器 ID、Image ID、Started At、`RestartCount=0` 和 `running/healthy` 前后一致 | `UNCHANGED` |
+
+`ossutil stat` 在最小权限角色下会额外请求 `GetObjectACL` 并返回 `AccessDenied`。本次按最小权限原则不授予 ACL 读取权限，改用直接下载、SHA-256、`gzip -t` 和字节级比较证明 `GetObject` 有效。
+
+## 8. 当前运行边界
 
 - 基础 `/opt/gameexchange/prod.env` 已直接引用批准的 RC2 Digest；`docker-compose.rc2-app-override.yaml` 继续保留，但不再是基础配置正确渲染 RC2 的必要条件。
 - App、Grafana 和 Prometheus 继续只绑定 ECS 回环地址；MySQL 未发布宿主机端口。
 - SSH Tunnel 只证明受控私有访问，不代表 DNS、可信 TLS、Nginx 公网入口或外部探测已经通过。
 - 当前仍是单 ECS、单 App 实例和本机 MySQL，存在节点级单点，不具备高可用能力。
-- 数据库备份尚未离机，也未完成隔离恢复演练；生产容量和故障恢复目标尚未验证。
+- 数据库备份已完成一次 OSS 离机归档和隔离恢复演练；自动化备份、周期性恢复演练、生产容量和正式 RPO/RTO 仍未验证。
 - 本次没有执行完整浏览器业务 E2E、生产流量测试或容量测试。
 - [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) 中原始 `KL-01` 至 `KL-09` 的签署记录保持不变；后续 ACR 与 ECS 证据只补充新的时间点，不覆盖历史决策。
 
-## 8. 结论
+## 9. 结论
 
-`GameExchange 1.0.0-rc2` 已按批准的不可变 ACR Digest 部署到目标 ECS，App 健康、数据库业务探测通过、MySQL 运行身份保持不变，并完成无域名 SSH Tunnel 私有验收和基础 Compose 配置收敛。最终状态为 `PRIVATE_VALIDATION_PASSED`。
+`GameExchange 1.0.0-rc2` 已按批准的不可变 ACR Digest 部署到目标 ECS，App 健康、数据库业务探测通过、MySQL 运行身份保持不变，并完成无域名 SSH Tunnel 私有验收、基础 Compose 配置收敛、OSS 离机备份上传回读以及一次隔离恢复演练。最终状态为 `PRIVATE_VALIDATION_AND_RESTORE_PASSED`。
 
-该结论仅适用于作品集技术预发布。正式公网运行前仍需完成域名与可信 TLS、入口代理、外部监控、离机备份与恢复演练、容量验证以及与目标 SLA 相匹配的高可用设计。详细运行边界见 [PRODUCTION_ECS.md](../../deployment/PRODUCTION_ECS.md)。
+该结论仅适用于作品集技术预发布。正式公网运行前仍需完成域名与可信 TLS、入口代理、外部监控、自动化备份、周期性恢复演练、容量验证以及与目标 SLA 相匹配的高可用设计。详细运行边界见 [PRODUCTION_ECS.md](../../deployment/PRODUCTION_ECS.md)。

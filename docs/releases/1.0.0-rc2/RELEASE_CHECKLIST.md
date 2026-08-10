@@ -70,14 +70,14 @@
 
 ## Known Limitations
 
-Verification Status 为 `BLOCKED` 表示该能力不在本次 Gate 的已验证范围内。只有 Risk Owner 明确签署 `ACCEPTED` 后，它才不会阻塞 RC2。
+Verification Status 为 `BLOCKED` 表示该能力不在本次 Gate 的已验证范围内。`PARTIALLY_VERIFIED` 表示后续补充过有限范围的实测证据，但仍保留未覆盖的生产边界。只有 Risk Owner 明确签署 `ACCEPTED` 后，它才不会阻塞 RC2。
 
 | ID | 未覆盖范围 | 主要风险 | Verification Status |
 | --- | --- | --- | --- |
 | KL-01 | 未验证真实生产 TLS | 本地 HTTP 不能证明生产传输链路安全 | `BLOCKED` |
 | KL-02 | 未验证外部 Secret 分发与轮换 | 当前结果不能证明生产凭据生命周期安全 | `BLOCKED` |
 | KL-03 | 未验证高可用部署 | 单实例通过不能证明节点故障时服务连续 | `BLOCKED` |
-| KL-04 | 未执行真实备份恢复演练 | 无法用实测结果证明 RPO/RTO | `BLOCKED` |
+| KL-04 | 已完成一次 OSS 回读副本隔离恢复演练；未验证自动化备份、周期性演练和正式 RPO/RTO | 单次手工恢复不能证明持续恢复能力或故障恢复目标 | `PARTIALLY_VERIFIED` |
 | KL-05 | 未执行生产流量和容量测试 | 隔离 Smoke Test 不能代表生产负载表现 | `BLOCKED` |
 | KL-06 | 未执行完整浏览器 UI E2E | 静态资源或交互回归可能未被 API 测试发现 | `BLOCKED` |
 | KL-07 | 完整 Release Gate 尚未接入 CI | Gate 仍依赖人工在指定主机执行 | `BLOCKED` |
@@ -91,7 +91,7 @@ Verification Status 为 `BLOCKED` 表示该能力不在本次 Gate 的已验证�
 | KL-01 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | RC2 仅作为作品集技术预发布，生产 TLS 不在本次验收范围。 |
 | KL-02 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 接受外部 Secret 生命周期尚未完成生产验证。 |
 | KL-03 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 接受当前单实例边界，不将 RC2 宣称为高可用部署。 |
-| KL-04 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 接受备份恢复尚无真实演练结果，不宣称已达到 RPO/RTO。 |
+| KL-04 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 原始签署时接受备份恢复尚无真实演练结果；P3.3-C1 于 `2026-08-10` 完成一次基于 OSS 回读副本的隔离恢复演练，但仍不宣称已达到生产 RPO/RTO。 |
 | KL-05 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 接受未执行生产容量测试，不提供生产 SLA。 |
 | KL-06 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 接受未执行完整浏览器 UI E2E，保留现有自动化与 Smoke Test 证据。 |
 | KL-07 | `SMzhiman` | `ACCEPTED` | `2026-08-07` | 接受完整 Gate 仍为人工执行，远端 CI 仅提供核心质量门禁。 |
